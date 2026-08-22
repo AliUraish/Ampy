@@ -24,19 +24,25 @@ class MistralGateway:
         self.client = Mistral(api_key=settings.mistral_api_key.get_secret_value())
 
     def parse(self, *, system: str, user: str, response_model: type[T]) -> T:
-        response = self.client.chat.parse(
+        # The SDK's chat.parse strict-schema converter rejects valid numeric constraints
+        # (for example `minimum: 0`) in recent Pydantic schemas. JSON mode avoids that
+        # client-side converter; Pydantic still performs the full validation afterward.
+        schema = json.dumps(response_model.model_json_schema(), separators=(",", ":"))
+        response = self.client.chat.complete(
             model=self.model,
             messages=[
-                {"role": "system", "content": system},
+                {
+                    "role": "system",
+                    "content": (
+                        f"{system}\nReturn only a JSON object matching this JSON schema: {schema}"
+                    ),
+                },
                 {"role": "user", "content": user},
             ],
-            response_format=response_model,
+            response_format={"type": "json_object"},
             temperature=0.15,
         )
         message = response.choices[0].message
-        parsed = getattr(message, "parsed", None)
-        if parsed is not None:
-            return parsed
         return response_model.model_validate_json(message.content)
 
     def web_research(self, prompt: str) -> tuple[str, list[dict[str, str]]]:
@@ -60,6 +66,45 @@ class MistralGateway:
                 seen.add(url)
                 unique_references.append(reference)
         return "\n".join(texts).strip(), unique_references
+
+    def web_parse(
+        self,
+        *,
+        system: str,
+        prompt: str,
+        response_model: type[T],
+    ) -> tuple[T, list[dict[str, str]]]:
+        """Search and produce validated JSON in one request to conserve rate limits."""
+        schema = json.dumps(response_model.model_json_schema(), separators=(",", ":"))
+        response = self.client.beta.conversations.start(
+            model=self.model,
+            instructions=(
+                f"{system}\nReturn only a JSON object matching this JSON schema: {schema}"
+            ),
+            inputs=[{"role": "user", "content": prompt}],
+            tools=[{"type": self.search_tool}],
+            completion_args={
+                "temperature": 0.15,
+                "response_format": {"type": "json_object"},
+            },
+            store=False,
+        )
+        payload = response.model_dump(mode="json")
+        texts: list[str] = []
+        references: list[dict[str, str]] = []
+        self._collect_content(payload.get("outputs", []), texts, references)
+        raw_json = "".join(texts).strip()
+        if raw_json.startswith("```json"):
+            raw_json = raw_json.removeprefix("```json").removesuffix("```").strip()
+
+        seen: set[str] = set()
+        unique_references = []
+        for reference in references:
+            url = reference.get("url", "")
+            if url and url not in seen:
+                seen.add(url)
+                unique_references.append(reference)
+        return response_model.model_validate_json(raw_json), unique_references
 
     @classmethod
     def _collect_content(
