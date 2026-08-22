@@ -12,10 +12,11 @@ import { cn } from "@/lib/utils";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const VISUALIZER_BARS = 16;
 
-type PromptMode = "search" | "think" | "canvas";
+export type PromptMode = "search" | "think" | "canvas";
 
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[]) => void;
+  onSend?: (message: string, files: File[], mode: PromptMode | null) => void;
+  onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
@@ -106,7 +107,6 @@ function ImagePreviewDialog({ imageUrl, onClose }: { imageUrl: string | null; on
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#17171b] p-2 shadow-2xl focus:outline-none">
           <DialogPrimitive.Title className="sr-only">Image preview</DialogPrimitive.Title>
-          {/* A local data URL cannot use the Next.js image optimizer. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={imageUrl} alt="Uploaded image preview" className="max-h-[80vh] w-full rounded-xl object-contain" />
           <DialogPrimitive.Close className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black focus-visible:ring-2 focus-visible:ring-white">
@@ -134,7 +134,7 @@ function TooltipButton({ label, children }: { label: string; children: React.Rea
 }
 
 export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>(
-  ({ onSend = () => undefined, isLoading = false, placeholder = "Type your message here...", className }, forwardedRef) => {
+  ({ onSend = () => undefined, onStop, isLoading = false, placeholder = "Type your message here...", className }, forwardedRef) => {
     const [input, setInput] = React.useState("");
     const [file, setFile] = React.useState<File | null>(null);
     const [filePreview, setFilePreview] = React.useState<string | null>(null);
@@ -144,6 +144,14 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const [mode, setMode] = React.useState<PromptMode | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const uploadInputRef = React.useRef<HTMLInputElement>(null);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    const resizeTextarea = React.useCallback(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
+    }, []);
 
     const processFile = React.useCallback((nextFile: File): void => {
       if (!nextFile.type.startsWith("image/")) {
@@ -187,6 +195,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
       return () => document.removeEventListener("paste", handlePaste);
     }, [processFile]);
 
+    React.useEffect(() => {
+      resizeTextarea();
+    }, [input, resizeTextarea]);
+
     const toggleMode = (nextMode: PromptMode): void => {
       setMode((currentMode) => (currentMode === nextMode ? null : nextMode));
     };
@@ -199,23 +211,30 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     };
 
     const submit = (): void => {
-      if (!input.trim() && !file) return;
-      const prefix = mode ? `[${mode[0].toUpperCase()}${mode.slice(1)}: ` : "";
-      const message = prefix ? `${prefix}${input.trim()}]` : input.trim();
-      onSend(message, file ? [file] : []);
+      if (isLoading) return;
+      const text = input.trim();
+      if (!text && !file) return;
+      onSend(text || "Describe this image", file ? [file] : [], mode);
       setInput("");
       removeFile();
+      window.requestAnimationFrame(resizeTextarea);
     };
 
     const stopRecording = (): void => {
-      const duration = Math.max(1, elapsedSeconds);
       setIsRecording(false);
       setElapsedSeconds(0);
-      onSend(`[Voice message - ${duration} seconds]`, []);
+      setError("Voice input isn’t available yet — type your request instead.");
     };
 
     const hasContent = input.trim().length > 0 || file !== null;
-    const inputPlaceholder = mode === "search" ? "Search the web..." : mode === "think" ? "Think deeply..." : mode === "canvas" ? "Create on canvas..." : placeholder;
+    const inputPlaceholder =
+      mode === "search"
+        ? "Hunt Craigslist deals across the U.S...."
+        : mode === "think"
+          ? "Describe an item to value and negotiate…"
+          : mode === "canvas"
+            ? "Tell the buyer agent what to find and haggle…"
+            : placeholder;
 
     return (
       <TooltipPrimitive.Provider delayDuration={250}>
@@ -233,11 +252,16 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             if (droppedFile) processFile(droppedFile);
           }}
         >
+          {mode ? (
+            <div className="px-3 pb-1 pt-1 text-[11px] uppercase tracking-[0.18em] text-white/35">
+              {mode === "search" ? "Deal Finder" : mode === "think" ? "Seller agent" : "Buyer agent"}
+            </div>
+          ) : null}
+
           {file && filePreview && !isRecording ? (
             <div className="pb-1">
               <div className="group relative size-16 overflow-hidden rounded-xl border border-white/10">
                 <button type="button" onClick={() => setSelectedImage(filePreview)} className="h-full w-full" aria-label={`Preview ${file.name}`}>
-                  {/* A local data URL cannot use the Next.js image optimizer. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={filePreview} alt="" className="h-full w-full object-cover" />
                 </button>
@@ -252,12 +276,13 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             <VoiceRecorder elapsedSeconds={elapsedSeconds} />
           ) : (
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
-                  submit();
+                  if (!isLoading) submit();
                 }
               }}
               disabled={isLoading}
@@ -271,7 +296,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
           {error ? <p role="alert" className="px-3 pb-1 text-xs text-red-300">{error}</p> : null}
 
           <div className="flex items-center justify-between gap-2 pt-2">
-            <div className={cn("flex min-w-0 items-center gap-0.5", isRecording && "invisible")}>
+            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", isRecording && "invisible")}>
               <TooltipButton label="Upload image">
                 <button type="button" onClick={() => uploadInputRef.current?.click()} className="flex size-8 items-center justify-center rounded-full text-[#9CA3AF] transition-colors hover:bg-white/5 hover:text-white" disabled={isLoading}>
                   <Paperclip className="size-5" />
@@ -289,30 +314,34 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   event.target.value = "";
                 }}
               />
-              <ModeButton active={mode === "search"} label="Search" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
+              <ModeButton active={mode === "search"} label="Deals" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
               <Divider />
-              <ModeButton active={mode === "think"} label="Think" color="purple" icon={<BrainCog className="size-4" />} onClick={() => toggleMode("think")} />
+              <ModeButton active={mode === "think"} label="Seller" color="purple" icon={<BrainCog className="size-4" />} onClick={() => toggleMode("think")} />
               <Divider />
-              <ModeButton active={mode === "canvas"} label="Canvas" color="orange" icon={<FolderCode className="size-4" />} onClick={() => toggleMode("canvas")} />
+              <ModeButton active={mode === "canvas"} label="Buyer" color="orange" icon={<FolderCode className="size-4" />} onClick={() => toggleMode("canvas")} />
             </div>
 
-            <TooltipButton label={isLoading ? "Stop generation" : isRecording ? "Stop recording" : hasContent ? "Send message" : "Voice message"}>
+            <TooltipButton label={isLoading ? "Stop" : isRecording ? "Cancel recording" : hasContent ? "Send message" : "Voice message"}>
               <Button
                 type="button"
                 size="icon"
-                disabled={isLoading}
-                aria-label={isRecording ? "Stop recording" : hasContent ? "Send message" : "Start voice message"}
+                aria-label={isLoading ? "Stop generation" : isRecording ? "Cancel recording" : hasContent ? "Send message" : "Start voice message"}
                 className={cn(
                   "shrink-0 rounded-full",
-                  isRecording ? "bg-transparent text-red-500 hover:bg-white/5" : hasContent ? "bg-white text-[#1F2023] hover:bg-white/80" : "bg-transparent text-[#9CA3AF] hover:bg-white/5 hover:text-white",
+                  isLoading || isRecording
+                    ? "bg-transparent text-red-500 hover:bg-white/5"
+                    : hasContent
+                      ? "bg-white text-[#1F2023] hover:bg-white/80"
+                      : "bg-transparent text-[#9CA3AF] hover:bg-white/5 hover:text-white",
                 )}
                 onClick={() => {
-                  if (isRecording) stopRecording();
+                  if (isLoading) onStop?.();
+                  else if (isRecording) stopRecording();
                   else if (hasContent) submit();
                   else { setElapsedSeconds(0); setIsRecording(true); }
                 }}
               >
-                {isLoading ? <Square className="size-4 animate-pulse fill-current" /> : isRecording ? <StopCircle className="size-5" /> : hasContent ? <ArrowUp className="size-4" /> : <Mic className="size-5" />}
+                {isLoading ? <Square className="size-4 fill-current" /> : isRecording ? <StopCircle className="size-5" /> : hasContent ? <ArrowUp className="size-4" /> : <Mic className="size-5" />}
               </Button>
             </TooltipButton>
           </div>
