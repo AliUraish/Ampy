@@ -112,6 +112,30 @@ export async function runDiscoverAgent(query: string, signal: AbortSignal): Prom
   return { message: payload.agentMessage, products: payload.products };
 }
 
+function toDealCard(data: Record<string, unknown>, fallbackId: string): DealCard {
+  const dealMeta = (data.deal || {}) as Record<string, unknown>;
+  return {
+    id: String(data.id || fallbackId),
+    title: String(data.title || "Listing"),
+    price: typeof data.price === "number" ? data.price : null,
+    score: typeof dealMeta.score === "number" ? dealMeta.score : undefined,
+    url: typeof data.url === "string" ? data.url : undefined,
+    imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : null,
+    location: typeof data.location === "string"
+      ? data.location
+      : typeof data.market === "string"
+        ? data.market
+        : undefined,
+    why: typeof dealMeta.why === "string"
+      ? dealMeta.why
+      : typeof dealMeta.headline === "string"
+        ? dealMeta.headline
+        : typeof data.description === "string"
+          ? data.description
+          : undefined,
+  };
+}
+
 export async function runDealFinderAgent(
   query: string,
   signal: AbortSignal,
@@ -123,14 +147,29 @@ export async function runDealFinderAgent(
     location: "us",
     fast: "1",
   });
-  // Prefer mock-friendly cached path when offline demos are needed via env on server.
   const source = new EventSource(`${ampyApi.dealFinder.deals}?${params.toString()}`);
 
   return await new Promise((resolve, reject) => {
     const deals: DealCard[] = [];
     let settled = false;
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      if (deals.length > 0) {
+        settled = true;
+        cleanup();
+        resolve({
+          message: `Found ${deals.length} live listings before the scan timed out.`,
+          deals: deals.slice(0, 8),
+        });
+        return;
+      }
+      settled = true;
+      cleanup();
+      reject(new Error("Deal Finder timed out while scraping Craigslist."));
+    }, 90_000);
 
     const cleanup = () => {
+      window.clearTimeout(timeout);
       source.close();
       signal.removeEventListener("abort", onAbort);
     };
@@ -161,21 +200,7 @@ export async function runDealFinderAgent(
     source.addEventListener("deal", (event) => {
       try {
         const data = JSON.parse((event as MessageEvent).data) as Record<string, unknown>;
-        const dealMeta = (data.deal || {}) as Record<string, unknown>;
-        deals.push({
-          id: String(data.id || `${deals.length}-${data.title}`),
-          title: String(data.title || "Listing"),
-          price: typeof data.price === "number" ? data.price : null,
-          score: typeof dealMeta.score === "number" ? dealMeta.score : undefined,
-          url: typeof data.url === "string" ? data.url : undefined,
-          imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : null,
-          location: typeof data.location === "string" ? data.location : undefined,
-          why: typeof dealMeta.why === "string"
-            ? dealMeta.why
-            : typeof dealMeta.headline === "string"
-              ? dealMeta.headline
-              : undefined,
-        });
+        deals.push(toDealCard(data, `${deals.length}-${data.title}`));
         onLog(`Deal: ${String(data.title || "")}`);
       } catch {
         // ignore
