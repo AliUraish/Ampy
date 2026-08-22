@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// backend/start.mjs — start Ampy seller (Python :8000) then buyer (Node :3000).
+// backend/start.mjs — start the full Ampy stack:
+//   seller :8000, buyer :3001, deal-finder :4747, Next frontend :3000
 //
 // Usage from repo root: npm start
-// Or: node backend/start.mjs
 
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
@@ -14,13 +14,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const SELLER_DIR = path.join(__dirname, "seller");
 const BUYER_DIR = path.join(__dirname, "buyer");
+const DEAL_FINDER_DIR = path.join(__dirname, "deal-finder");
+const FRONTEND_DIR = path.join(ROOT, "frontend");
 
 const SELLER_HOST = process.env.SELLER_HOST || "127.0.0.1";
 const SELLER_PORT = process.env.SELLER_PORT || "8000";
-const BUYER_PORT = process.env.PORT || "3000";
+const BUYER_PORT = process.env.BUYER_PORT || "3001";
+const DEAL_FINDER_PORT = process.env.DEAL_FINDER_PORT || "4747";
+const FRONTEND_PORT = process.env.FRONTEND_PORT || "3000";
 const SELLER_URL = `http://${SELLER_HOST}:${SELLER_PORT}`;
 
 const children = [];
+let shuttingDown = false;
 
 function prefixPipe(child, name) {
   const tag = `[${name}]`;
@@ -48,23 +53,21 @@ function spawnProc(name, command, args, options) {
   return child;
 }
 
-let shuttingDown = false;
 function shutdown(code = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   for (const child of children) {
     if (!child.killed) child.kill("SIGTERM");
   }
-  // Force-kill after a short grace period.
   setTimeout(() => {
     for (const child of children) {
       if (!child.killed) child.kill("SIGKILL");
     }
     process.exit(code);
-  }, 3000).unref();
+  }, 4000).unref();
 }
 
-async function waitForHealth(url, { attempts = 60, intervalMs = 500 } = {}) {
+async function waitForHealth(url, { attempts = 90, intervalMs = 500, label = "service" } = {}) {
   for (let i = 0; i < attempts; i++) {
     try {
       const res = await fetch(url);
@@ -74,14 +77,14 @@ async function waitForHealth(url, { attempts = 60, intervalMs = 500 } = {}) {
     }
     await delay(intervalMs);
   }
-  throw new Error(`seller health check failed: ${url} not ready`);
+  throw new Error(`${label} health check failed: ${url} not ready`);
 }
 
 async function main() {
-  console.log(`[start] Ampy backend — seller ${SELLER_URL}, buyer :${BUYER_PORT}`);
-  console.log(`[start] loading env from ${path.join(ROOT, ".env")}`);
+  console.log(`[start] Ampy full stack`);
+  console.log(`[start] env: ${path.join(ROOT, ".env")}`);
+  console.log(`[start] frontend :${FRONTEND_PORT}  seller :${SELLER_PORT}  buyer :${BUYER_PORT}  deal-finder :${DEAL_FINDER_PORT}`);
 
-  // Prefer `uv run` when available; fall back to venv / system uvicorn.
   const sellerCmd = process.env.SELLER_CMD
     ? process.env.SELLER_CMD.split(" ")
     : ["uv", "run", "uvicorn", "app.main:app", "--host", SELLER_HOST, "--port", String(SELLER_PORT)];
@@ -92,7 +95,7 @@ async function main() {
   });
 
   try {
-    await waitForHealth(`${SELLER_URL}/health`);
+    await waitForHealth(`${SELLER_URL}/health`, { label: "seller" });
   } catch (err) {
     console.error(`[start] ${err.message}`);
     shutdown(1);
@@ -109,8 +112,46 @@ async function main() {
     },
   });
 
-  console.log(`[start] buyer starting on http://127.0.0.1:${BUYER_PORT}`);
-  console.log(`[start] Ctrl+C to stop both`);
+  spawnProc("deal-finder", "node", ["server.js"], {
+    cwd: DEAL_FINDER_DIR,
+    env: {
+      ...process.env,
+      PORT: String(DEAL_FINDER_PORT),
+      DEAL_FINDER_PORT: String(DEAL_FINDER_PORT),
+    },
+  });
+
+  try {
+    await Promise.all([
+      waitForHealth(`http://127.0.0.1:${BUYER_PORT}/`, { label: "buyer" }),
+      waitForHealth(`http://127.0.0.1:${DEAL_FINDER_PORT}/health`, { label: "deal-finder" }),
+    ]);
+  } catch (err) {
+    console.error(`[start] ${err.message}`);
+    shutdown(1);
+    return;
+  }
+  console.log(`[start] buyer healthy on :${BUYER_PORT}`);
+  console.log(`[start] deal-finder healthy on :${DEAL_FINDER_PORT}`);
+
+  const frontendCmd = process.env.FRONTEND_CMD
+    ? process.env.FRONTEND_CMD.split(" ")
+    : ["npm", "run", "dev", "--", "-p", String(FRONTEND_PORT)];
+
+  spawnProc("frontend", frontendCmd[0], frontendCmd.slice(1), {
+    cwd: FRONTEND_DIR,
+    env: {
+      ...process.env,
+      PORT: String(FRONTEND_PORT),
+      BUYER_URL: process.env.BUYER_URL || `http://127.0.0.1:${BUYER_PORT}`,
+      SELLER_URL: process.env.SELLER_URL || SELLER_URL,
+      DEAL_FINDER_URL: process.env.DEAL_FINDER_URL || `http://127.0.0.1:${DEAL_FINDER_PORT}`,
+    },
+  });
+
+  console.log(`[start] frontend starting on http://127.0.0.1:${FRONTEND_PORT}`);
+  console.log(`[start] open http://127.0.0.1:${FRONTEND_PORT}`);
+  console.log(`[start] Ctrl+C to stop all`);
 }
 
 process.on("SIGINT", () => shutdown(0));
