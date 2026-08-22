@@ -1,4 +1,12 @@
-import type { EventCard } from "@/lib/agents";
+export interface EventCard {
+  title: string;
+  url?: string;
+  date?: string;
+  location?: string;
+  why?: string;
+  items?: string[];
+  score?: number;
+}
 
 interface CalendarSeed {
   keywords: string[];
