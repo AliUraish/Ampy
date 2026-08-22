@@ -209,7 +209,7 @@ export function DemoOne(): React.ReactElement {
 }
 
 function AgentIcon({ agent }: { agent: AgentKind }): React.ReactElement {
-  if (agent === "deals") return <Search className="size-4 animate-pulse text-sky-300" />;
+  if (agent === "deals" || agent === "reseller") return <Search className="size-4 animate-pulse text-sky-300" />;
   if (agent === "seller") return <Store className="size-4 animate-pulse text-violet-300" />;
   if (agent === "buyer") return <ShoppingBag className="size-4 animate-pulse text-orange-300" />;
   return <Sparkles className="size-4 animate-pulse text-orange-300" />;
@@ -236,6 +236,7 @@ function TurnCard({ turn }: { turn: ChatTurn }): React.ReactElement {
       </div>
       {turn.products?.length ? <ProductGrid products={turn.products} /> : null}
       {turn.deals?.length ? <DealGrid deals={turn.deals} /> : null}
+      {turn.events?.length ? <EventGrid events={turn.events} /> : null}
       {turn.logs?.length && turn.agent === "buyer" ? (
         <ul className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[11px] text-white/45">
           {turn.logs.map((line) => (
