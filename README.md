@@ -1,21 +1,17 @@
 # Ampy
 
-Buyer, seller, and deal-finder agents under one repo. Shared root `.env`.
-Product UI for Deal Finder lives in `frontend/`; buyer/seller APIs are headless
-(for a separate frontend later).
+Buyer, seller, and deal-finder backends plus a Next.js frontend.
 
 ```
 backend/
   start.mjs          # npm start — seller + buyer
   seller/            # Python FastAPI
   buyer/             # Node buyer agent API
-  deal-finder/       # Node Deal Finder API (serves frontend/)
-frontend/            # Deal Finder UI
+  deal-finder/       # Node Deal Finder API (SSE)
+frontend/            # Next.js product-discovery UI
 ```
 
 ## Setup
-
-Python 3.11+, [uv](https://docs.astral.sh/uv/), and Node 18+ are required.
 
 ```bash
 cp .env.example .env
@@ -24,20 +20,23 @@ cp .env.example .env
 npm run install:seller
 npm run install:buyer
 npm run install:deal-finder
+npm run install:frontend
 ```
 
 ## Run
 
 ```bash
 npm start                 # seller :8000 + buyer :3000
-npm run start:deal-finder # Deal Finder UI + API :4747
+npm run start:deal-finder # Deal Finder API :4747
+npm run dev:frontend      # Next.js UI :3000 (use another port if buyer is up)
 ```
 
 | Service | URL | Role |
 |---|---|---|
-| Buyer API | `http://127.0.0.1:3000` | Search, agent run, ask, negotiate |
-| Seller API | `http://127.0.0.1:8000` | `/ask`, `/negotiate`, `/seller/value`, `/events/discover` |
-| Deal Finder | `http://127.0.0.1:4747` | Nationwide Craigslist scan UI + SSE API |
+| Frontend | `http://127.0.0.1:3000` | Product discovery UI |
+| Buyer API | `http://127.0.0.1:3000` | Search / agent (when started via `npm start`) |
+| Seller API | `http://127.0.0.1:8000` | `/ask`, `/negotiate`, valuation, events |
+| Deal Finder | `http://127.0.0.1:4747` | Nationwide Craigslist scan API |
 
-See `backend/buyer/README.md`, `backend/seller/README.md`, and
-`backend/deal-finder/README.md` for details.
+Note: buyer and the Next frontend both default to port 3000 — run one at a time,
+or set `PORT` / `-p` for the frontend.
