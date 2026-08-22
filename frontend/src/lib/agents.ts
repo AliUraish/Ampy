@@ -2,10 +2,10 @@ import { ampyApi } from "@/lib/ampy";
 import { isProductSearchResponse, type Product } from "@/lib/products";
 import type { PromptMode } from "@/components/ui/ai-prompt-box";
 
-export type AgentKind = "discover" | "deals" | "seller" | "buyer";
+export type AgentKind = "discover" | "deals" | "reseller" | "seller" | "buyer";
 
 export function agentForMode(mode: PromptMode | null): AgentKind {
-  if (mode === "search") return "deals";
+  if (mode === "search") return "reseller";
   if (mode === "think") return "seller";
   if (mode === "canvas") return "buyer";
   return "discover";
@@ -16,7 +16,8 @@ export function agentLabel(kind: AgentKind): string {
     case "discover":
       return "Product discovery";
     case "deals":
-      return "Deal Finder";
+    case "reseller":
+      return "Reseller agent";
     case "seller":
       return "Seller agent";
     case "buyer":
@@ -35,6 +36,16 @@ export interface DealCard {
   why?: string;
 }
 
+export interface EventCard {
+  title: string;
+  url?: string;
+  date?: string;
+  location?: string;
+  why?: string;
+  items?: string[];
+  score?: number;
+}
+
 export interface ChatTurn {
   id: string;
   role: "user" | "agent";
@@ -42,6 +53,7 @@ export interface ChatTurn {
   text: string;
   products?: Product[];
   deals?: DealCard[];
+  events?: EventCard[];
   logs?: string[];
   valuation?: {
     listPrice?: number;
