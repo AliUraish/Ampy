@@ -14,5 +14,10 @@ backend/buyer/data/sellerListings.json
 backend/buyer/data/messageLog.json
 backend/buyer/uploads/*
 !backend/buyer/uploads/.gitkeep
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/playwright-report/
+frontend/test-results/
 .DS_Store
 *.egg-info/
