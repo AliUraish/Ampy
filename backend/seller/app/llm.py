@@ -94,8 +94,13 @@ class MistralGateway:
         references: list[dict[str, str]] = []
         self._collect_content(payload.get("outputs", []), texts, references)
         raw_json = "".join(texts).strip()
-        if raw_json.startswith("```json"):
-            raw_json = raw_json.removeprefix("```json").removesuffix("```").strip()
+        if raw_json.startswith("```"):
+            raw_json = raw_json.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        if not raw_json.startswith("{"):
+            start = raw_json.find("{")
+            end = raw_json.rfind("}")
+            if start >= 0 and end > start:
+                raw_json = raw_json[start : end + 1]
 
         seen: set[str] = set()
         unique_references = []
