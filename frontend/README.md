@@ -1,29 +1,30 @@
 # Ampy frontend
 
-Next.js product-discovery UI (from the `ai-prompt-box` branch). Prompt box +
-Mistral-backed product search at `/api/products`.
+Next.js UI for Ampy. Product discovery lives here (`/api/products`). Browser
+calls to buyer / seller / deal-finder go through same-origin rewrites:
 
-## Setup
-
-Uses the repo-root `.env` (`MISTRAL_API_KEY`). From the repo root:
-
-```bash
-npm run install:frontend
-npm run dev:frontend
-```
-
-Or:
-
-```bash
-cd frontend
-pnpm install   # or npm install
-pnpm dev       # http://localhost:3000
-```
-
-## Scripts
-
-| Command | Purpose |
+| Browser path | Backend |
 |---|---|
-| `npm run dev` | Next.js dev server |
-| `npm run build` / `npm start` | Production |
-| `npm run lint` / `npm run typecheck` | Checks |
+| `/api/products` | Next route (this app) |
+| `/api/buyer/*` | `backend/buyer` `:3001` |
+| `/api/seller/*` | `backend/seller` `:8000` |
+| `/api/deals`, `/api/deal-finder/*` | `backend/deal-finder` `:4747` |
+
+Shared helpers: `src/lib/ampy.ts`.
+
+## Run
+
+Prefer the full stack from the repo root:
+
+```bash
+npm start
+```
+
+Frontend only (backends must already be up):
+
+```bash
+npm run dev:frontend
+# http://localhost:3000
+```
+
+Uses the repo-root `.env` for `MISTRAL_API_KEY`.
