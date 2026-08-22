@@ -363,23 +363,19 @@ export async function runResellerAgent(
   onLog("scanning underpriced inventory…");
   const result = await runDealFinderAgent(query, signal, onLog);
 
-  let events: EventCard[] = [];
+  onLog("loading local calendar…");
+  const mockEvents = mockScrapedCalendar(query);
+  let events: EventCard[] = mockEvents;
   try {
     const response = await fetch(ampyApi.seller.events, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        area: "San Francisco Bay Area",
-        days_ahead: 21,
-        item_interests: [query],
-        minimum_score: 40,
-        max_results: 5,
-      }),
-      signal: AbortSignal.any ? AbortSignal.any([signal, AbortSignal.timeout(18_000)]) : signal,
+      body: JSON.stringify({ query, area: "San Francisco Bay Area" }),
+      signal: AbortSignal.any ? AbortSignal.any([signal, AbortSignal.timeout(8_000)]) : signal,
     });
     if (response.ok) {
       const payload = await response.json() as { opportunities?: Record<string, unknown>[] };
-      events = (payload.opportunities || []).map((event) => ({
+      const live = (payload.opportunities || []).map((event) => ({
         title: String(event.title || "Event"),
         url: typeof event.url === "string" ? event.url : undefined,
         date: typeof event.date_and_time === "string" ? event.date_and_time : undefined,
@@ -388,26 +384,37 @@ export async function runResellerAgent(
         items: Array.isArray(event.likely_items) ? event.likely_items.map(String) : undefined,
         score: typeof event.opportunity_score === "number" ? event.opportunity_score : undefined,
       }));
-      if (events.length) onLog(`${events.length} local demand events`);
+      if (live.length) events = [...live, ...mockEvents].slice(0, 6);
     }
   } catch {
-    onLog("event scout skipped");
+    onLog("using mock-scraped calendar");
   }
+  onLog(`${events.length} calendar events in context`);
 
+  const eventNames = events.slice(0, 3).map((event) => event.title).join(", ");
   return {
     message: result.deals.length
-      ? `Found ${result.deals.length} flip candidates${events.length ? ` and ${events.length} upcoming demand events` : ""}. Buy under median, list near local comps.`
-      : "No strong flip inventory in this pass — try a tighter niche.",
+      ? `Found ${result.deals.length} flip candidates. Calendar context: ${eventNames}. Buy under median and stage inventory for those dates.`
+      : `No strong flips this pass. Calendar still loaded: ${eventNames}.`,
     deals: result.deals,
     events,
   };
+}
+
+export interface BuyerSession {
+  item: string;
+  asking: number;
+  floor: number;
+  budget: number;
+  title: string;
+  turn: number;
 }
 
 export async function runBuyerAgent(
   query: string,
   signal: AbortSignal,
   onLog: (line: string) => void,
-): Promise<{ message: string; logs: string[]; deals: DealCard[] }> {
+): Promise<{ message: string; logs: string[]; deals: DealCard[]; negotiation: NegotiationLine[]; session: BuyerSession | null }> {
   const logs: string[] = [];
   let recommendation = "";
   let deals: DealCard[] = [];
