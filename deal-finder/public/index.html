@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Deal Finder scans U.S. listings, appraises their market value, and ranks the best flips in real time.">
+  <title>Deal Finder — scan, rank, flip</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Deal Finder home">
+        <span class="brand-orbit" aria-hidden="true">DF</span>
+        <span>Deal Finder</span>
+      </a>
+      <nav class="masthead-nav" aria-label="Product navigation">
+        <a href="#scan-form">Find deals</a>
+        <a href="#console-title">Live activity</a>
+        <a href="#feed-title">Results</a>
+      </nav>
+      <div class="system-state" aria-label="System status">
+        <span class="pulse-dot"></span>
+        <span>Finder online</span>
+        <span class="model-label">Mistral Medium</span>
+      </div>
+    </header>
+
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="hero-topline">
+        <p class="kicker">U.S. marketplace intelligence</p>
+      </div>
+      <h1 id="hero-title">Find the deal<br>before everyone else.</h1>
+      <p class="hero-copy">Search a niche across the country, compare fair value, and see exactly why each opportunity made the cut.</p>
+
+      <form class="scan-bar" id="scan-form">
+        <div class="scan-field coverage-field">
+          <span class="field-label">Coverage</span>
+          <span class="control-wrap coverage-control" aria-label="United States, 12 priority markets">
+            <span class="control-icon" aria-hidden="true">◎</span>
+            <strong>United States</strong>
+            <small>12 markets</small>
+          </span>
+          <input id="location" name="location" type="hidden" value="us">
+        </div>
+        <label class="scan-field category-field">
+          <span class="field-label">Category</span>
+          <span class="control-wrap">
+            <span class="control-icon" aria-hidden="true">▦</span>
+            <select id="category" name="category" aria-label="Listing category">
+              <option value="general">All categories</option>
+              <option value="jewelry">Jewelry &amp; watches</option>
+              <option value="bikes">Bikes</option>
+              <option value="electronics">Electronics</option>
+              <option value="furniture">Furniture</option>
+              <option value="instruments">Instruments</option>
+              <option value="appliances">Appliances</option>
+              <option value="vehicles">Vehicles</option>
+            </select>
+          </span>
+        </label>
+        <label class="scan-field query-field">
+          <span class="field-label">Search target</span>
+          <span class="control-wrap">
+            <span class="control-icon" aria-hidden="true">⌕</span>
+            <input id="query" name="query" type="search" value="road bike" placeholder="What should the agent find?" autocomplete="off" required>
+          </span>
+        </label>
+        <label class="scan-field budget-field">
+          <span class="field-label">Max spend</span>
+          <span class="control-wrap">
+            <span class="control-prefix">$</span>
+            <input id="max-price" name="maxPrice" type="number" min="1" step="1" value="400" inputmode="numeric" aria-label="Maximum price in dollars">
+          </span>
+        </label>
+        <div class="scan-actions">
+          <button class="scan-button" id="scan-button" type="submit">
+            <span class="scan-button-text">Find deals</span>
+            <span class="button-arrow scan-button-icon" aria-hidden="true">↗</span>
+          </button>
+          <button class="replay-button" id="replay-button" type="button" title="Replay the last successful scan">
+            <span>Last scan</span><b aria-hidden="true">↻</b>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <div class="banner" id="banner" role="status" hidden>
+      <span class="banner-icon" aria-hidden="true">!</span>
+      <span id="banner-message"></span>
+      <button id="banner-close" type="button" aria-label="Dismiss notification">×</button>
+    </div>
+
+    <main class="workspace">
+      <section class="agent-panel" aria-labelledby="console-title">
+        <div class="panel-header console-header">
+          <div>
+            <p class="kicker kicker-dark">Live execution</p>
+            <h2 id="console-title">Finder activity</h2>
+          </div>
+          <div class="console-status" id="console-status"><span></span> IDLE</div>
+        </div>
+        <div class="live-ticker" aria-label="Live agent event ticker" aria-live="polite">
+          <div class="live-ticker-track" id="live-ticker-track">
+            <span class="ticker-event is-progress">READY TO HUNT</span><i>DF</i>
+            <span class="ticker-event is-progress">SET A TARGET</span><i>DF</i>
+            <span class="ticker-event is-progress">START THE SCAN</span><i>DF</i>
+            <span class="ticker-event is-progress">READY TO HUNT</span><i>DF</i>
+            <span class="ticker-event is-progress">SET A TARGET</span><i>DF</i>
+            <span class="ticker-event is-progress">START THE SCAN</span><i>DF</i>
+          </div>
+        </div>
+        <details class="console-details">
+          <summary><span>Full agent log</span><b id="elapsed-time">00:00</b></summary>
+          <div class="console" id="console" role="log" aria-live="polite" aria-relevant="additions">
+            <div class="console-intro">
+              <div class="terminal-brand">DF<span>/</span>AGENT</div>
+              <p>Ready to inspect U.S. inventory.</p>
+              <p class="console-dim">Set a target and start the scan.</p>
+            </div>
+          </div>
+          <div class="console-footer">
+            <span><i class="legend-dot accent"></i> live event stream</span>
+            <span>MISTRAL APPRAISAL CORE</span>
+          </div>
+        </details>
+      </section>
+
+      <section class="feed-panel" aria-labelledby="feed-title">
+        <div class="panel-header feed-header">
+          <div>
+            <p class="kicker">Ranked opportunities</p>
+            <div class="feed-heading-row">
+              <h2 id="feed-title">Deals worth a closer look</h2>
+              <span class="result-count" id="result-count">0 deals</span>
+            </div>
+          </div>
+          <label class="toggle-control">
+            <input id="show-passes" type="checkbox">
+            <span class="toggle-track"><span></span></span>
+            <span>Show passes</span>
+          </label>
+        </div>
+        <div class="feed" id="deal-feed" aria-live="polite">
+          <div class="empty-state" id="empty-state">
+            <div class="radar-graphic" aria-hidden="true">
+              <span class="radar-sweep"></span>
+              <i class="radar-point one"></i><i class="radar-point two"></i><i class="radar-point three"></i>
+            </div>
+            <p class="empty-kicker" id="empty-kicker">Ready when you are</p>
+            <h3 id="empty-title">Promising finds<br>will land here.</h3>
+            <p id="empty-copy">We compare the ask, condition, market comps, and resale demand as listings arrive across the U.S.</p>
+          </div>
+          <div class="skeleton-list" id="skeleton-list" hidden aria-label="Scanning for deals">
+            <div class="skeleton-card"><span></span><div><b></b><i></i><i></i></div><em></em></div>
+            <div class="skeleton-card"><span></span><div><b></b><i></i><i></i></div><em></em></div>
+            <div class="skeleton-card"><span></span><div><b></b><i></i><i></i></div><em></em></div>
+          </div>
+          <div class="deal-list" id="deal-list"></div>
+          <div class="pass-list" id="pass-list" hidden></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="deal-drawer reasoning-drawer" id="deal-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" aria-hidden="true">
+    <button class="drawer-close" id="drawer-close" type="button" aria-label="Close decision trace">×</button>
+    <div id="drawer-content"></div>
+  </aside>
+
+  <template id="deal-card-template">
+    <article class="deal-card">
+      <div class="deal-card-inner">
+        <section class="card-face card-front" aria-label="Deal summary">
+          <button class="deal-photo product-detail-trigger" type="button" aria-label="Open product opportunity details">
+            <div class="card-photo-placeholder"><span>Photo unavailable</span></div>
+          </button>
+          <div class="card-topline">
+            <span class="card-rank">Finder pick</span>
+            <span class="market-sticker"></span>
+            <span class="flag-chip" hidden></span>
+            <button class="card-arrow card-flip-trigger" type="button" aria-label="Flip card to view agent trace">&gt;_</button>
+          </div>
+          <div class="score-ring" aria-label="Deal score"><span class="score-value"></span></div>
+          <button class="deal-main product-detail-trigger" type="button" aria-label="Open product opportunity details">
+            <div class="deal-title-row"><h3></h3></div>
+            <p class="deal-meta"></p>
+            <div class="deal-tags"><span class="demand-tag"></span><span class="confidence-tag"></span></div>
+          </button>
+          <div class="deal-value">
+            <span class="delta-label">Estimated upside</span>
+            <strong class="deal-delta"></strong>
+            <small class="fair-value"></small>
+            <button class="reasoning-affordance card-flip-trigger" type="button">Agent trace <span aria-hidden="true">&gt;_</span></button>
+          </div>
+        </section>
+
+        <section class="card-face card-back agent-trace-face" aria-label="Agent trace and live evidence" aria-hidden="true" inert>
+          <header class="trace-card-header">
+            <div><span class="trace-card-kicker">DF / AGENT TRACE</span><h3 class="trace-card-title">Inspecting listing</h3></div>
+            <button class="card-unflip" type="button" aria-label="Return to product" disabled>×</button>
+          </header>
+          <div class="trace-card-meta">
+            <span class="trace-card-status"><i></i> LIVE EVIDENCE</span>
+            <span class="trace-card-ask"></span>
+          </div>
+          <div class="card-terminal" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <p class="trace-disclosure">Structured evidence only — no hidden chain-of-thought.</p>
+          <button class="card-full-trace" type="button" disabled>Open full 7-step decision trace <span aria-hidden="true">↗</span></button>
+        </section>
+      </div>
+    </article>
+  </template>
+  <script src="app.js"></script>
+</body>
+</html>
