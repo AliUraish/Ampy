@@ -53,19 +53,21 @@ export async function POST(request: Request): Promise<NextResponse<ProductSearch
 
   try {
     const candidates = await searchProductCandidates(query, apiKey);
-    const scrapedProducts = await Promise.all(candidates.map(scrapeProduct));
+    const scrapedProducts = await Promise.all(candidates.map((candidate, index) => scrapeProduct(candidate, index)));
     const products = scrapedProducts.filter((product): product is Product => product !== null).slice(0, 5);
 
-    if (products.length !== 5) {
+    if (products.length === 0) {
       return NextResponse.json(
-        { error: "I could not verify five products with working images. Try a more specific search.", code: "scrape_count" },
+        { error: "I could not scrape live product pages for that search. Try a more specific query.", code: "scrape_count" },
         { status: 502 },
       );
     }
 
     return NextResponse.json({
       query,
-      agentMessage: "I found five products for you.",
+      agentMessage: products.length === 5
+        ? "I found five products for you."
+        : `I found ${products.length} live product${products.length === 1 ? "" : "s"} for you.`,
       products,
     });
   } catch (error: unknown) {
@@ -208,15 +210,37 @@ function parseMarkdownCandidates(text: string): ProductCandidate[] {
 async function scrapeProduct(candidate: ProductCandidate, index: number): Promise<Product | null> {
   try {
     const response = await fetch(candidate.productUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; ProductDiscovery/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
       redirect: "follow",
       cache: "no-store",
       signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const fallbackImage = safeExternalUrl(candidate.imageUrl);
+      if (!fallbackImage) return null;
+      return {
+        id: `${index}-${new URL(candidate.productUrl).hostname}`,
+        name: candidate.name,
+        price: candidate.price || "Check price",
+        imageUrl: fallbackImage,
+        productUrl: candidate.productUrl,
+        retailer: candidate.retailer,
+        reason: candidate.reason,
+      };
+    }
     const html = await response.text();
     const finalUrl = safeExternalUrl(response.url) ?? candidate.productUrl;
-    const imageUrl = resolveExternalUrl(readMeta(html, "og:image") ?? candidate.imageUrl, finalUrl);
+    const imageUrl = resolveExternalUrl(
+      readMeta(html, "og:image")
+        ?? readMeta(html, "twitter:image")
+        ?? readMeta(html, "twitter:image:src")
+        ?? candidate.imageUrl,
+      finalUrl,
+    );
     if (!imageUrl) return null;
 
     const pageTitle = cleanText(readMeta(html, "og:title") ?? readTitle(html));
