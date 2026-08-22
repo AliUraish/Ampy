@@ -14,7 +14,7 @@ export const ampyApi = {
   seller: {
     ask: "/api/seller/ask",
     negotiate: "/api/seller/negotiate",
-    value: "/api/seller/seller/value",
+    value: "/api/seller-value",
     events: "/api/seller/events/discover",
     health: "/api/seller/health",
   },
