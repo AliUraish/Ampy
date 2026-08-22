@@ -17,6 +17,10 @@ app.get("/health", (_req, res) => {
   res.json({ name: "Ampy deal-finder", status: "ok" });
 });
 
+app.get("/api/health", (_req, res) => {
+  res.json({ name: "Ampy deal-finder", status: "ok" });
+});
+
 app.get("/api/craigslist-locations", (req, res) => res.json(craigslistLocations));
 
 // GET /api/deals — implemented in lib/dealScan.js. See docs/contracts.md.
