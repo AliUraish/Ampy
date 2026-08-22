@@ -125,7 +125,9 @@ async function compsValuation({
 function searchFallbacks(item: string): string[] {
   const cleaned = item.replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
   const words = cleaned.split(" ").filter((word) => word.length > 2 && !/^\d+$/.test(word));
+  const withoutModels = words.filter((word) => !/\d/.test(word));
   const queries = [cleaned];
+  if (withoutModels.length >= 2) queries.push(withoutModels.join(" "));
   if (words.length > 2) queries.push(words.slice(-2).join(" "));
   if (words.length) queries.push(words[words.length - 1]);
   return [...new Set(queries.filter(Boolean))];
