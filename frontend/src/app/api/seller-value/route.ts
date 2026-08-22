@@ -77,14 +77,20 @@ async function compsValuation({
   if (item.length < 3) throw new Error("Describe the item to value.");
 
   const buyer = process.env.BUYER_URL || "http://127.0.0.1:3001";
-  const response = await fetch(
-    `${buyer}/api/search?${new URLSearchParams({ q: item, limit: "20" }).toString()}`,
-    { cache: "no-store", signal: AbortSignal.timeout(COMPS_TIMEOUT_MS) },
-  );
-  if (!response.ok) throw new Error("Could not scrape live comps for this item.");
-
-  const payload = await response.json() as { listings?: Listing[] };
-  const listings = (payload.listings || []).filter((listing) => Number.isFinite(listing.price) && (listing.price || 0) > 0);
+  let listings: Listing[] = [];
+  for (const query of searchFallbacks(item)) {
+    const response = await fetch(
+      `${buyer}/api/search?${new URLSearchParams({ q: query, limit: "20" }).toString()}`,
+      { cache: "no-store", signal: AbortSignal.timeout(COMPS_TIMEOUT_MS) },
+    );
+    if (!response.ok) continue;
+    const payload = await response.json() as { listings?: Listing[] };
+    listings = (payload.listings || []).filter((listing) => {
+      const price = Number(listing.price);
+      return Number.isFinite(price) && price > 0;
+    });
+    if (listings.length) break;
+  }
   const prices = listings.map((listing) => Number(listing.price)).sort((a, b) => a - b);
   if (!prices.length) throw new Error("No priced Craigslist comps found. Try a more specific item.");
 
@@ -109,9 +115,18 @@ async function compsValuation({
     source: "craigslist_comps",
     comparables: listings.slice(0, 6).map((listing) => ({
       title: listing.title || "Listing",
-      price: listing.price,
+      price: Number(listing.price),
       url: listing.url || "https://craigslist.org",
       notes: listing.location || "",
     })),
   };
+}
+
+function searchFallbacks(item: string): string[] {
+  const cleaned = item.replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+  const words = cleaned.split(" ").filter((word) => word.length > 2 && !/^\d+$/.test(word));
+  const queries = [cleaned];
+  if (words.length > 2) queries.push(words.slice(-2).join(" "));
+  if (words.length) queries.push(words[words.length - 1]);
+  return [...new Set(queries.filter(Boolean))];
 }
