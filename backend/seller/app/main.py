@@ -73,12 +73,33 @@ def negotiate_buyer(
     return service.negotiate_buyer_contract(request)
 
 
+def _llm_http_error(exc: Exception) -> HTTPException | None:
+    message = str(exc)
+    lowered = message.lower()
+    if "429" in message or "rate_limit" in lowered or "rate limit" in lowered:
+        return HTTPException(
+            status_code=429,
+            detail="Mistral rate limit reached. Wait a moment and try again.",
+        )
+    if "api key" in lowered or "unauthorized" in lowered or "401" in message:
+        return HTTPException(status_code=503, detail="Seller LLM is not configured.")
+    return None
+
+
 @app.post("/seller/value", response_model=ValuationResponse)
 def value_item(
     request: ValuationRequest,
     service: Annotated[SellerService, Depends(get_seller_service)],
 ) -> ValuationResponse:
-    return service.value_item(request)
+    try:
+        return service.value_item(request)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        mapped = _llm_http_error(exc)
+        if mapped:
+            raise mapped from exc
+        raise HTTPException(status_code=502, detail="Seller valuation failed.") from exc
 
 
 @app.post("/seller/negotiate", response_model=NegotiationResponse)
