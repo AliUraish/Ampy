@@ -1,6 +1,6 @@
 # Demo script (90 seconds)
 
-**Before going on stage:** `npm start`, open http://localhost:4747, run one real scan so `data/lastScan.json` is fresh and Craigslist's cache is warm. Confirm **Replay cached** plays it. If wifi is bad, the whole demo runs on Replay cached and nobody can tell.
+**Before going on stage:** from the repo root run `npm run start:deal-finder`, open http://localhost:4747, run one real scan so `data/lastScan.json` is fresh and Craigslist's cache is warm. Confirm **Replay cached** plays it. If wifi is bad, the whole demo runs on Replay cached and nobody can tell.
 
 | Sec | Say | Do |
 |---|---|---|
