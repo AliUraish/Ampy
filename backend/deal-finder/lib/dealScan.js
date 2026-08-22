@@ -457,16 +457,29 @@ async function runFastScrapeScan(params, send, startedAt) {
   let marketsSearched = 1;
 
   if (location === "us") {
-    const previousLimit = process.env.US_MARKET_LIMIT;
-    process.env.US_MARKET_LIMIT = String(Math.min(US_MARKET_LIMIT, FAST_MARKET_LIMIT));
-    try {
-      const result = await searchUnitedStates({ query, category, maxPrice, emit });
-      listings = result.listings;
-      marketsSearched = result.marketsSearched;
-    } finally {
-      if (previousLimit === undefined) delete process.env.US_MARKET_LIMIT;
-      else process.env.US_MARKET_LIMIT = previousLimit;
-    }
+    const markets = US_MARKETS.slice(0, FAST_MARKET_LIMIT);
+    const results = await mapWithConcurrency(
+      markets,
+      3,
+      async (market) => {
+        const result = await searchCraigslist({ location: market.slug, category, query, maxPrice });
+        if (!result || result.error) {
+          emit("progress", { stage: "market", market: market.name, count: 0, unavailable: true });
+          return { listings: [], error: result?.error || "no response" };
+        }
+        const found = extractCraigslistListings(result).map((listing) => ({
+          ...listing,
+          market: market.name,
+        }));
+        emit("progress", { stage: "market", market: market.name, count: found.length });
+        return { listings: found };
+      },
+      { jitterMs: 120 },
+    );
+    const available = results.filter((result) => result && !result.error);
+    if (!available.length) throw new Error("Craigslist searches failed across all US markets");
+    listings = roundRobinListings(available.map((result) => result.listings));
+    marketsSearched = markets.length;
   } else {
     listings = extractCraigslistListings(
       await searchCraigslist({ location, category, query, maxPrice }),
