@@ -35,5 +35,4 @@ test("handles an invalid file without overflowing on mobile", async ({ page }) =
   });
   await expect(page.getByText("Only image files are supported.", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toHaveCSS("overflow-x", "scroll");
-  await page.screenshot({ path: "/tmp/ai-prompt-mobile.png", fullPage: true });
 });
