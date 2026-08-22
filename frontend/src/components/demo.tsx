@@ -8,12 +8,13 @@ import {
   agentForMode,
   agentLabel,
   runBuyerAgent,
-  runDealFinderAgent,
   runDiscoverAgent,
+  runResellerAgent,
   runSellerAgent,
   type AgentKind,
   type ChatTurn,
   type DealCard,
+  type EventCard,
 } from "@/lib/agents";
 import type { Product } from "@/lib/products";
 
