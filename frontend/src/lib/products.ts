@@ -26,7 +26,7 @@ export function isProductSearchResponse(value: unknown): value is ProductSearchR
     typeof candidate.query === "string" &&
     typeof candidate.agentMessage === "string" &&
     Array.isArray(candidate.products) &&
-    candidate.products.length === 5 &&
+    candidate.products.length >= 1 &&
     candidate.products.every(isProduct)
   );
 }
