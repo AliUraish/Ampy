@@ -95,8 +95,8 @@ async function compsValuation({
   if (!prices.length) throw new Error("No priced Craigslist comps found. Try a more specific item.");
 
   const median = prices[Math.floor(prices.length / 2)];
-  const low = prices[Math.floor((prices.length - 1) * 0.25)] || prices[0];
-  const high = prices[Math.floor((prices.length - 1) * 0.75)] || prices[prices.length - 1];
+  const low = prices[Math.max(0, Math.floor((prices.length - 1) * 0.25))];
+  const high = prices[Math.min(prices.length - 1, Math.ceil((prices.length - 1) * 0.75))];
   const marginFloor = Math.round(purchaseCost * (1 + marginPct / 100));
   const floor = Math.round(Math.max(low * 0.85, marginFloor, 1));
   const list = Math.round(Math.max(median, floor));
