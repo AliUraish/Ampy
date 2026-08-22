@@ -285,6 +285,32 @@ function ProductGrid({ products }: { products: Product[] }): React.ReactElement 
   );
 }
 
+function EventGrid({ events }: { events: EventCard[] }): React.ReactElement {
+  return (
+    <div className="grid grid-cols-1 gap-3">
+      {events.map((event) => (
+        <a
+          key={`${event.title}-${event.date || ""}`}
+          href={event.url || "#"}
+          target={event.url ? "_blank" : undefined}
+          rel="noopener noreferrer"
+          className="rounded-2xl border border-violet-400/20 bg-[#19191e] p-3 hover:border-violet-400/40"
+        >
+          <p className="text-sm font-medium text-white/90">{event.title}</p>
+          <p className="mt-1 text-xs text-white/40">
+            {[event.date, event.location].filter(Boolean).join(" · ")}
+            {typeof event.score === "number" ? ` · score ${event.score}` : ""}
+          </p>
+          {event.why ? <p className="mt-2 text-xs leading-5 text-white/50">{event.why}</p> : null}
+          {event.items?.length ? (
+            <p className="mt-2 text-xs text-sky-300/80">Stock: {event.items.slice(0, 6).join(", ")}</p>
+          ) : null}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function DealGrid({ deals }: { deals: DealCard[] }): React.ReactElement {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
