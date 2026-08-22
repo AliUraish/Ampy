@@ -1,6 +1,6 @@
 # Demo script (90 seconds)
 
-**Before going on stage:** from the repo root run `npm run start:deal-finder`, open http://localhost:4747, run one real scan so `data/lastScan.json` is fresh and Craigslist's cache is warm. Confirm **Replay cached** plays it. If wifi is bad, the whole demo runs on Replay cached and nobody can tell.
+**Before going on stage:** from the repo root run `npm run start:deal-finder` for the API. The original static Deal Finder UI was removed; product UI is now `npm run dev:frontend`. For a Craigslist-scan demo, hit the SSE API directly or wire the Next app to `:4747`.
 
 | Sec | Say | Do |
 |---|---|---|

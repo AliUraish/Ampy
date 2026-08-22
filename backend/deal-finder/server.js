@@ -1,5 +1,4 @@
-// server.js — Deal Finder API + static UI.
-// Backend lives in backend/deal-finder; UI lives in frontend/.
+// server.js — Deal Finder API (SSE scan). UI lives in repo-root frontend/ (Next.js).
 
 const path = require("path");
 
@@ -9,12 +8,14 @@ require("dotenv").config({ quiet: true });
 const express = require("express");
 const craigslistLocations = require("./data/craigslistLocations");
 
-const FRONTEND_DIR = path.join(__dirname, "..", "..", "frontend");
 const PORT = process.env.DEAL_FINDER_PORT || process.env.PORT || 4747;
 
 const app = express();
 app.use(express.json());
-app.use(express.static(FRONTEND_DIR));
+
+app.get("/health", (_req, res) => {
+  res.json({ name: "Ampy deal-finder", status: "ok" });
+});
 
 app.get("/api/craigslist-locations", (req, res) => res.json(craigslistLocations));
 
@@ -38,11 +39,6 @@ app.get("/api/deals", async (req, res) => {
   }
 });
 
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
-});
-
 app.listen(PORT, () => {
-  console.log(`Deal Finder API + UI on http://localhost:${PORT}`);
-  console.log(`  frontend: ${FRONTEND_DIR}`);
+  console.log(`Deal Finder API on http://localhost:${PORT}`);
 });

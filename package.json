@@ -2,15 +2,18 @@
   "name": "ampy",
   "version": "0.1.0",
   "private": true,
-  "description": "Ampy — unified buyer, seller, and deal-finder backend",
+  "description": "Ampy — buyer, seller, deal-finder backends + Next.js frontend",
   "scripts": {
     "start": "node backend/start.mjs",
     "start:seller": "cd backend/seller && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000",
     "start:buyer": "cd backend/buyer && SELLER_AGENT_URL=http://127.0.0.1:8000 node server.js",
     "start:deal-finder": "npm start --prefix backend/deal-finder",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
     "install:buyer": "npm install --prefix backend/buyer",
     "install:seller": "cd backend/seller && uv sync --extra dev",
     "install:deal-finder": "npm install --prefix backend/deal-finder",
+    "install:frontend": "npm install --prefix frontend",
     "test:deal-finder": "npm test --prefix backend/deal-finder"
   },
   "license": "UNLICENSED"
