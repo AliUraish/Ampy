@@ -1,14 +1,14 @@
 # Ampy
 
-Buyer, seller, and deal-finder backends plus a Next.js frontend.
+Full stack: Next.js frontend + buyer, seller, and deal-finder backends.
 
 ```
+frontend/            # Next.js UI (port 3000) — proxies to backends
 backend/
-  start.mjs          # npm start — seller + buyer
-  seller/            # Python FastAPI
-  buyer/             # Node buyer agent API
-  deal-finder/       # Node Deal Finder API (SSE)
-frontend/            # Next.js product-discovery UI
+  start.mjs          # npm start — full stack
+  seller/            # Python FastAPI (:8000)
+  buyer/             # Node buyer agent (:3001)
+  deal-finder/       # Node Deal Finder API (:4747)
 ```
 
 ## Setup
@@ -17,26 +17,31 @@ frontend/            # Next.js product-discovery UI
 cp .env.example .env
 # set MISTRAL_API_KEY
 
-npm run install:seller
-npm run install:buyer
-npm run install:deal-finder
-npm run install:frontend
+npm run install:all
 ```
 
-## Run
+## Run everything
 
 ```bash
-npm start                 # seller :8000 + buyer :3000
-npm run start:deal-finder # Deal Finder API :4747
-npm run dev:frontend      # Next.js UI :3000 (use another port if buyer is up)
+npm start
 ```
 
-| Service | URL | Role |
-|---|---|---|
-| Frontend | `http://127.0.0.1:3000` | Product discovery UI |
-| Buyer API | `http://127.0.0.1:3000` | Search / agent (when started via `npm start`) |
-| Seller API | `http://127.0.0.1:8000` | `/ask`, `/negotiate`, valuation, events |
-| Deal Finder | `http://127.0.0.1:4747` | Nationwide Craigslist scan API |
+Opens the UI at **http://127.0.0.1:3000** and starts:
 
-Note: buyer and the Next frontend both default to port 3000 — run one at a time,
-or set `PORT` / `-p` for the frontend.
+| Service | Port | Via frontend |
+|---|---|---|
+| Next.js UI + `/api/products` | 3000 | — |
+| Buyer API | 3001 | `/api/buyer/*` |
+| Seller API | 8000 | `/api/seller/*` |
+| Deal Finder API | 4747 | `/api/deals`, `/api/deal-finder/*` |
+
+Stack health: `GET http://127.0.0.1:3000/api/status`
+
+## Run pieces alone
+
+```bash
+npm run start:seller
+npm run start:buyer
+npm run start:deal-finder
+npm run dev:frontend
+```
