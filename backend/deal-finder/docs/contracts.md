@@ -78,5 +78,7 @@ Pipeline: fan out across 12 priority U.S. Craigslist markets (3 concurrent) → 
 
 `candidate` and `analysis` are a truthful live-evidence feed, not hidden model chain-of-thought. Cache replay intentionally filters them out and hydrates only completed `deal`/`pass` payloads, so a cached page never pretends that old work is happening live.
 
-## public/ (Track 4) — single page at /
+## public/ (Track 4) — single page
+
+UI now lives in repo-root `frontend/` and is served by `server.js`.
 Consumes `new EventSource('/api/deals?...')`. Sections: ScanBar (fixed United States coverage badge, category select, query, max price, Scan, "replay cached"), AgentConsole (append one line per progress/deal/pass), DealFeed (cards sorted live by score desc; ScoreRing conic-gradient: ≥75 green, 50-74 amber, <50 red; dollar delta = fairValue − price), DealDrawer (photo, valuation.condition + model appraisal reason, comps bar with this price marked vs median, demand bar with source tag, flags, "Open on Craigslist" link), Banner for error/cache mode, toggle "show passes". The drawer is a **decision trace**, not hidden chain-of-thought: it may show structured evidence, the short model-provided appraisal reason, deterministic score math, and the concise verdict.
