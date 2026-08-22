@@ -7,15 +7,21 @@ import { PromptInputBox, type PromptMode } from "@/components/ui/ai-prompt-box";
 import {
   agentForMode,
   agentLabel,
+  continueBuyerNegotiation,
+  continueSellerNegotiation,
   runBuyerAgent,
   runDiscoverAgent,
   runResellerAgent,
   runSellerAgent,
   type AgentKind,
+  type BuyerSession,
   type ChatTurn,
   type DealCard,
   type EventCard,
+  type NegotiationLine,
+  type SellerSession,
 } from "@/lib/agents";
+import { extractOffer } from "@/lib/negotiateLocal";
 import type { Product } from "@/lib/products";
 
 export function DemoOne(): React.ReactElement {
@@ -26,6 +32,8 @@ export function DemoOne(): React.ReactElement {
   const [error, setError] = React.useState<string | null>(null);
   const [stackOk, setStackOk] = React.useState<boolean | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
+  const sellerSessionRef = React.useRef<SellerSession | null>(null);
+  const buyerSessionRef = React.useRef<BuyerSession | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -97,33 +105,59 @@ export function DemoOne(): React.ReactElement {
           },
         ]);
       } else if (agent === "seller") {
-        const result = await runSellerAgent(query, controller.signal);
-        setTurns((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "agent",
-            agent,
-            text: result.message,
-            valuation: result.valuation,
-            deals: result.deals,
-          },
-        ]);
+        const existing = sellerSessionRef.current;
+        const continueTalk = Boolean(existing && (extractOffer(query) || query.length < 80));
+        if (continueTalk && existing) {
+          const result = continueSellerNegotiation(existing, query);
+          sellerSessionRef.current = result.session;
+          setTurns((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "agent", agent, text: result.message, negotiation: result.negotiation },
+          ]);
+        } else {
+          const result = await runSellerAgent(query, controller.signal);
+          sellerSessionRef.current = result.session;
+          setTurns((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "agent",
+              agent,
+              text: result.message,
+              valuation: result.valuation,
+              deals: result.deals,
+              negotiation: result.negotiation,
+            },
+          ]);
+        }
       } else {
-        const result = await runBuyerAgent(query, controller.signal, (line) => {
-          setLiveLogs((logs) => [...logs.slice(-20), line]);
-        });
-        setTurns((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "agent",
-            agent,
-            text: result.message,
-            logs: result.logs,
-            deals: result.deals,
-          },
-        ]);
+        const existing = buyerSessionRef.current;
+        const continueTalk = Boolean(existing && (extractOffer(query) || /take|offer|counter|yes|ok/i.test(query)));
+        if (continueTalk && existing) {
+          const result = continueBuyerNegotiation(existing, query);
+          buyerSessionRef.current = result.session;
+          setTurns((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "agent", agent, text: result.message, negotiation: result.negotiation },
+          ]);
+        } else {
+          const result = await runBuyerAgent(query, controller.signal, (line) => {
+            setLiveLogs((logs) => [...logs.slice(-20), line]);
+          });
+          buyerSessionRef.current = result.session;
+          setTurns((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "agent",
+              agent,
+              text: result.message,
+              logs: result.logs,
+              deals: result.deals,
+              negotiation: result.negotiation,
+            },
+          ]);
+        }
       }
     } catch (runError: unknown) {
       if (runError instanceof DOMException && runError.name === "AbortError") {
@@ -153,9 +187,9 @@ export function DemoOne(): React.ReactElement {
             One chat for selling what you have, flipping underpriced inventory, and buying on Craigslist.
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] uppercase tracking-[0.16em] text-white/40">
-            <span className="rounded-full border border-[#8B5CF6]/30 px-3 py-1 text-[#c4b5fd]">Seller · Value</span>
-            <span className="rounded-full border border-[#1EAEDB]/30 px-3 py-1 text-[#7dd3fc]">Reseller · Flip</span>
-            <span className="rounded-full border border-[#F97316]/30 px-3 py-1 text-[#fdba74]">Buyer · Hunt</span>
+            <span className="rounded-full border border-[#8B5CF6]/30 px-3 py-1 text-[#c4b5fd]">Seller · Negotiate</span>
+            <span className="rounded-full border border-[#1EAEDB]/30 px-3 py-1 text-[#7dd3fc]">Reseller · Calendar</span>
+            <span className="rounded-full border border-[#F97316]/30 px-3 py-1 text-[#fdba74]">Buyer · Negotiate</span>
           </div>
           {stackOk === false ? (
             <p className="mt-3 text-xs text-amber-200/90">Backends look offline — run `npm start` from the repo root.</p>
@@ -237,6 +271,7 @@ function TurnCard({ turn }: { turn: ChatTurn }): React.ReactElement {
       {turn.products?.length ? <ProductGrid products={turn.products} /> : null}
       {turn.deals?.length ? <DealGrid deals={turn.deals} /> : null}
       {turn.events?.length ? <EventGrid events={turn.events} /> : null}
+      {turn.negotiation?.length ? <NegotiationThread lines={turn.negotiation} /> : null}
       {turn.logs?.length && turn.agent === "buyer" ? (
         <ul className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[11px] text-white/45">
           {turn.logs.map((line) => (
