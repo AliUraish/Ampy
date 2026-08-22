@@ -320,9 +320,29 @@ function ProductGrid({ products }: { products: Product[] }): React.ReactElement 
   );
 }
 
+function NegotiationThread({ lines }: { lines: NegotiationLine[] }): React.ReactElement {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
+      <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-white/35">Negotiation</p>
+      <ul className="space-y-2">
+        {lines.map((line, index) => (
+          <li
+            key={`${line.role}-${index}`}
+            className={line.role === "buyer" ? "ml-auto max-w-[90%] rounded-xl bg-white/90 px-3 py-2 text-sm text-[#17171b]" : "max-w-[90%] rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80"}
+          >
+            <p className="mb-0.5 text-[10px] uppercase tracking-[0.14em] text-current/50">{line.role}</p>
+            <p>{line.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function EventGrid({ events }: { events: EventCard[] }): React.ReactElement {
   return (
     <div className="grid grid-cols-1 gap-3">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-white/35">Calendar · mock-scraped events</p>
       {events.map((event) => (
         <a
           key={`${event.title}-${event.date || ""}`}
