@@ -1,0 +1,88 @@
+/* agent.css — styles specific to the buyer-agent console.
+   Extends style.css rather than replacing it, so the agent page reads as
+   part of the same app. */
+
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd4c8;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 15px;
+  box-sizing: border-box;
+  resize: vertical;
+  background: #fffdfa;
+  color: inherit;
+}
+textarea:focus { outline: none; border-color: #b8a68f; box-shadow: 0 0 0 3px rgba(184, 166, 143, 0.18); }
+
+.section-title { font-size: 15px; margin: 26px 0 12px; letter-spacing: 0.01em; }
+
+.agent-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 26px;
+  align-items: start;
+}
+@media (max-width: 900px) { .agent-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Capability strip — what's connected, shown up front so a missing
+   permission reads as a labelled fact rather than a silent failure. */
+.cap-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.cap {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid #e5ddd1; background: #fffdfa; color: #6b6055;
+}
+.cap .dot { width: 7px; height: 7px; border-radius: 50%; background: #c9c0b4; }
+.cap.on .dot { background: #2e9e5b; }
+.cap.off .dot { background: #c4443a; }
+.cap-note { font-size: 12px; color: #8a7f72; margin-top: 8px; line-height: 1.5; }
+
+/* Activity feed */
+.activity {
+  border: 1px solid #e9e2d7; border-radius: 10px; background: #fffdfa;
+  padding: 12px; max-height: 620px; overflow-y: auto; font-size: 13px;
+}
+.step { padding: 7px 0; border-bottom: 1px solid #f2ece2; line-height: 1.5; }
+.step:last-child { border-bottom: none; }
+.step .what { color: #6b6055; }
+.step .em { color: #2b241c; font-weight: 500; }
+.step.think { color: #8a7f72; font-style: italic; }
+.step.warn { color: #a8641f; }
+.step.bad { color: #c4443a; }
+.step.good { color: #2e7d4f; }
+.step-icon { display: inline-block; width: 16px; }
+
+/* Summary */
+.summary-card {
+  margin-top: 20px; padding: 18px 20px; border-radius: 10px;
+  border: 1px solid #e9e2d7; background: #fffdfa; line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Contact / negotiation badges on cards */
+.card-foot { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f2ece2; font-size: 12px; color: #6b6055; }
+.chan { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #6b6055; }
+.deal {
+  margin-top: 8px; font-size: 12px; padding: 6px 9px; border-radius: 6px;
+  background: #edf7f0; border: 1px solid #cfe8d9; color: #226c45;
+}
+.deal.none { background: #faf3ec; border-color: #eadfd0; color: #8a6a3f; }
+
+.ask-row { display: flex; gap: 6px; margin-top: 9px; }
+.ask-row input { flex: 1; font-size: 13px; padding: 6px 9px; }
+.ask-row button { font-size: 12px; padding: 6px 11px; }
+.ask-out { margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.ask-out .q { color: #8a7f72; }
+.ask-out .a { color: #2b241c; background: #f6f1e8; padding: 7px 9px; border-radius: 6px; margin-top: 4px; }
+
+/* Threads */
+.thread { border: 1px solid #e9e2d7; border-radius: 10px; background: #fffdfa; padding: 14px 16px; margin-bottom: 12px; }
+.thread h4 { margin: 0 0 3px; font-size: 14px; }
+.thread .meta { font-size: 12px; color: #8a7f72; margin-bottom: 9px; }
+.bubble { padding: 7px 11px; border-radius: 9px; margin: 5px 0; font-size: 13px; line-height: 1.5; max-width: 82%; }
+.bubble.out { background: #eef2f7; margin-left: auto; }
+.bubble.in { background: #f3f0e9; }
+.bubble.sys { background: #fbf0ec; color: #a8461f; font-size: 12px; max-width: 100%; }
+.bubble .when { display: block; font-size: 10px; color: #9a8f82; margin-top: 3px; }

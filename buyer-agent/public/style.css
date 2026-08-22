@@ -1,0 +1,577 @@
+/* Hagglr — shared styles across the buyer portal, seller portal, and dashboard.
+   Look & feel: paper/ledger book. Slab serif for headings & UI chrome,
+   monospace for anything numeric (prices, stats, ids), a warm paper
+   background with ruled lines standing in for a physical ledger page. */
+
+:root {
+  --paper: #f4efe0;
+  --paper-line: #d8cead;
+  --paper-raised: #fbf8ef;
+  --ink: #2b241c;
+  --ink-soft: #6b6153;
+  --ink-faint: #9b9078;
+  --rule: #c9bfa0;
+  --ledger-green: #3f6b4f;
+  --ledger-green-dark: #2c4d38;
+  --stamp-red: #a1462f;
+  --gold: #a9822f;
+  --shadow: rgba(43, 36, 28, 0.14);
+
+  --font-display: "Roboto Slab", "Rockwell", "Arvo", Georgia, "Times New Roman", serif;
+  --font-body: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 27px,
+    var(--paper-line) 28px
+  );
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--ledger-green-dark);
+}
+
+::selection {
+  background: #e3d9b8;
+}
+
+/* --- Layout ------------------------------------------------------------ */
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+
+/* --- Top nav ------------------------------------------------------------ */
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+  border-bottom: 3px double var(--rule);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.brand .tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: var(--ink-faint);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  font-family: var(--font-display);
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  padding: 8px 14px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+
+.nav-links a:hover {
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.nav-links a.active {
+  color: var(--paper-raised);
+  background: var(--ledger-green);
+}
+
+/* --- Headings ------------------------------------------------------------ */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-top: 28px;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin-top: 36px;
+}
+
+.subhead {
+  color: var(--ink-soft);
+  margin: 0 0 24px;
+  font-size: 0.98rem;
+}
+
+/* --- Cards / ledger sheets ------------------------------------------------ */
+
+.sheet {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px var(--shadow);
+  padding: 20px;
+}
+
+/* --- Forms ------------------------------------------------------------ */
+
+label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 14px 0 5px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 9px 11px;
+}
+
+input[type="number"] {
+  font-family: var(--font-mono);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ledger-green);
+  box-shadow: 0 0 0 3px rgba(63, 107, 79, 0.15);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0 16px;
+}
+
+button,
+.btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 11px 20px;
+  background: var(--ledger-green);
+  color: var(--paper-raised);
+  transition: background 0.15s ease;
+}
+
+button:hover,
+.btn:hover {
+  background: var(--ledger-green-dark);
+}
+
+button:disabled {
+  background: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+button.secondary,
+.btn.secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+
+button.secondary:hover {
+  background: var(--paper);
+}
+
+/* --- Prices / monospace data -------------------------------------------- */
+
+.price {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.price.large {
+  font-size: 1.5rem;
+}
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  transform: rotate(-1.5deg);
+}
+
+.stamp.green {
+  color: var(--ledger-green-dark);
+}
+
+.stamp.red {
+  color: var(--stamp-red);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* --- Listing cards -------------------------------------------------------- */
+
+.listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.listing-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 2px 6px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Base .thumb rules apply everywhere an <img class="thumb"> is used — the
+   grid cards AND the negotiate panel's hero image. object-fit: contain
+   (not cover) so the whole photo is always visible, never cropped;
+   width: 100% + a fixed height lets differently-shaped photos letterbox
+   inside a consistent box instead of overflowing it. */
+.thumb {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+/* Larger hero photo + thumbnail strip in the negotiate panel. */
+.gallery-hero {
+  height: 320px;
+}
+
+.gallery-thumbs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.gallery-thumbs img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.gallery-thumbs img:hover {
+  opacity: 1;
+}
+
+.gallery-thumbs img.selected {
+  opacity: 1;
+  border-color: var(--ledger-green);
+  border-width: 2px;
+}
+
+.listing-card h3 {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.listing-card .meta {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.listing-card .meta .mono {
+  color: var(--ink-faint);
+}
+
+.listing-card .desc {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.listing-card .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+/* --- Negotiation transcript ------------------------------------------------- */
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.turn {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  font-size: 0.94rem;
+}
+
+.turn .who {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  color: var(--ink-soft);
+}
+
+.turn.buyer {
+  align-self: flex-start;
+  background: var(--paper-raised);
+}
+
+.turn.seller {
+  align-self: flex-end;
+  background: #eee6cd;
+}
+
+.turn .offer {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.result-banner {
+  font-family: var(--font-display);
+  font-weight: 700;
+  padding: 14px 18px;
+  border-radius: 6px;
+  margin: 8px 0 20px;
+}
+
+.result-banner.deal {
+  background: rgba(63, 107, 79, 0.12);
+  border: 1px solid var(--ledger-green);
+  color: var(--ledger-green-dark);
+}
+
+.result-banner.no-deal {
+  background: rgba(161, 70, 47, 0.1);
+  border: 1px solid var(--stamp-red);
+  color: var(--stamp-red);
+}
+
+/* --- Dashboard table ------------------------------------------------------- */
+
+table.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+table.ledger th,
+table.ledger td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--paper-line);
+  font-size: 0.92rem;
+}
+
+table.ledger th {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+table.ledger td.mono {
+  font-family: var(--font-mono);
+}
+
+table.ledger tr:last-child td {
+  border-bottom: none;
+}
+
+.suggestion-repost {
+  color: var(--gold);
+}
+
+.suggestion-price_drop {
+  color: var(--stamp-red);
+}
+
+/* --- Photo upload dropzone -------------------------------------------------- */
+
+.dropzone {
+  border: 2px dashed var(--rule);
+  border-radius: 6px;
+  padding: 28px;
+  text-align: center;
+  color: var(--ink-soft);
+  cursor: pointer;
+  background: var(--paper);
+}
+
+.dropzone:hover {
+  border-color: var(--ledger-green);
+  color: var(--ink);
+}
+
+.photo-preview-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.photo-preview-strip img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+}
+
+/* --- Misc ------------------------------------------------------------ */
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+.spinner-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.error-banner {
+  background: rgba(161, 70, 47, 0.1);
+  border: 1px solid var(--stamp-red);
+  color: var(--stamp-red);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  margin: 12px 0;
+}
+
+.empty-state {
+  color: var(--ink-faint);
+  font-style: italic;
+  padding: 32px 0;
+  text-align: center;
+}

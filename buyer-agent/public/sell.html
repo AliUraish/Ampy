@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hagglr — Sell</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="/">Hagglr <span class="tag">seller</span></a>
+    <nav class="nav-links">
+      <a href="/">Search</a>
+      <a href="/sell" class="active">Sell</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </div>
+
+  <div class="page">
+    <h1>List an item</h1>
+    <p class="subhead">
+      Upload a few photos and Claude will draft the listing for you — title, category,
+      condition, and a suggested price range. Edit anything before you publish.
+    </p>
+
+    <div class="sheet">
+      <label for="photo-input">Photos</label>
+      <div class="dropzone" id="dropzone">
+        Click to choose photos, or drag them here
+        <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" />
+      </div>
+      <div class="photo-preview-strip" id="photo-preview"></div>
+      <div style="margin-top:14px;">
+        <button id="detect-btn" disabled>Analyze photos with Claude</button>
+      </div>
+      <div id="detect-status" class="hint"></div>
+    </div>
+
+    <div class="sheet" style="margin-top:20px;" id="listing-form-wrap">
+      <h2 style="margin-top:0;">Listing details</h2>
+      <p class="hint">Pre-filled from your photos once analyzed — everything here is editable.</p>
+
+      <label for="title">Title</label>
+      <input type="text" id="title" placeholder="e.g. Trek Marlin 7 mountain bike, size L" />
+
+      <div class="field-row">
+        <div>
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="general">General</option>
+            <option value="electronics">Electronics</option>
+            <option value="furniture">Furniture</option>
+            <option value="vehicles">Vehicles</option>
+            <option value="appliances">Appliances</option>
+            <option value="instruments">Instruments</option>
+            <option value="sporting goods">Sporting goods</option>
+          </select>
+        </div>
+        <div>
+          <label for="condition">Condition</label>
+          <select id="condition">
+            <option value="new">New</option>
+            <option value="like new">Like new</option>
+            <option value="excellent">Excellent</option>
+            <option value="good" selected>Good</option>
+            <option value="fair">Fair</option>
+          </select>
+        </div>
+        <div>
+          <label for="price">Asking price ($)</label>
+          <input type="number" id="price" min="0" />
+        </div>
+      </div>
+
+      <div id="suggested-range" class="hint"></div>
+
+      <label for="description">Description</label>
+      <textarea id="description" placeholder="Describe the item, its condition, and why you're selling."></textarea>
+
+      <label for="location">Location</label>
+      <input type="text" id="location" placeholder="e.g. Oakland, CA" />
+
+      <label for="sellerName">Your name (shown to buyers)</label>
+      <input type="text" id="sellerName" placeholder="e.g. Jordan K." />
+
+      <h2>Negotiation settings</h2>
+      <p class="hint">
+        These shape how your agent negotiates on this listing — never shown to buyers.
+      </p>
+      <div class="field-row">
+        <div>
+          <label for="minAcceptablePrice">Your real minimum price (optional)</label>
+          <input type="number" id="minAcceptablePrice" min="0" placeholder="e.g. 30" />
+        </div>
+        <div>
+          <label for="negotiationStyle">Negotiation style</label>
+          <select id="negotiationStyle">
+            <option value="balanced" selected>Balanced</option>
+            <option value="firm">Firm — hold close to asking price</option>
+            <option value="flexible">Flexible — motivated to sell soon</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint">
+        Leave the minimum price blank and Claude will estimate a reasonable floor at
+        negotiation time instead — clearly marked as an estimate, not a guarantee.
+      </p>
+
+      <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="publish-btn">Publish listing</button>
+        <button id="post-craigslist-btn" class="secondary">Post to Craigslist ↗</button>
+      </div>
+      <p class="hint">
+        "Post to Craigslist" copies this listing's text and opens Craigslist's own
+        posting page in a new tab — you paste it in and finish their form yourself.
+        Craigslist has no posting API and blocks automated posting, so this app
+        can't (and won't try to) submit it for you.
+      </p>
+      <div id="publish-status" class="hint"></div>
+      <div id="craigslist-status" class="hint"></div>
+    </div>
+  </div>
+
+  <!-- Fallback textarea if the clipboard API is unavailable — pre-selected
+       so the seller can copy manually with Cmd/Ctrl+C. -->
+  <textarea id="craigslist-clipboard-fallback" readonly
+    style="position:absolute; left:-9999px; top:0; width:1px; height:1px;"></textarea>
+
+  <script src="/sell.js"></script>
+</body>
+</html>

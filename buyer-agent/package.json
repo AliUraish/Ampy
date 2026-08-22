@@ -1,0 +1,20 @@
+{
+  "name": "hagglr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agentic marketplace — search real listings, let a buyer/seller agent pair negotiate the price.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "node-cron": "^4.6.0"
+  }
+}

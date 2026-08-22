@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hagglr — Buy</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="/">Hagglr <span class="tag">buyer</span></a>
+    <nav class="nav-links">
+      <a href="/" class="active">Search</a>
+      <a href="/sell">Sell</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </div>
+
+  <div class="page">
+    <h1>Find something worth haggling over</h1>
+    <p class="subhead">
+      Search live listings, then let your agent negotiate the price for you.
+    </p>
+
+    <div class="sheet">
+      <form id="search-form">
+        <div class="field-row">
+          <div>
+            <label for="q">Search</label>
+            <input type="search" id="q" name="q" placeholder="e.g. mountain bike" />
+          </div>
+          <div>
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">Any</option>
+              <option value="electronics">Electronics</option>
+              <option value="furniture">Furniture</option>
+              <option value="vehicles">Vehicles</option>
+              <option value="appliances">Appliances</option>
+              <option value="instruments">Instruments</option>
+              <option value="sporting goods">Sporting goods</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+          <div>
+            <label for="maxPrice">Max price</label>
+            <input type="number" id="maxPrice" name="maxPrice" min="0" placeholder="any" />
+          </div>
+          <div>
+            <label for="location">Craigslist location</label>
+            <select id="location" name="location">
+              <option value="">Loading locations…</option>
+            </select>
+          </div>
+          <div>
+            <label for="sort">Sort by</label>
+            <select id="sort" name="sort">
+              <option value="relevance">Relevance</option>
+              <option value="price_asc">Price: low to high</option>
+              <option value="price_desc">Price: high to low</option>
+              <option value="date_desc">Date: newest first</option>
+              <option value="date_asc">Date: oldest first</option>
+              <option value="distance_asc">Distance: nearest first</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top: 16px;">
+          <button type="submit">Search</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="search-meta" class="hint" style="margin-top: 10px;"></div>
+    <div id="results" class="listing-grid"></div>
+    <div style="text-align: center; margin-top: 20px;">
+      <button id="load-more-btn" class="secondary" style="display:none;">Load more</button>
+    </div>
+  </div>
+
+  <!-- Negotiation panel, shown as an overlay sheet -->
+  <div id="negotiate-overlay" style="display:none; position:fixed; inset:0; background:rgba(43,36,28,0.45); z-index:10;">
+    <div style="max-width:720px; margin:40px auto; max-height:calc(100vh - 80px); overflow-y:auto;">
+      <div class="sheet" id="negotiate-panel"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
