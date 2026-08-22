@@ -1,0 +1,19 @@
+{
+  "name": "ampy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ampy buyer agent — search listings, question sellers, and negotiate price.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "node-cron": "^4.6.0"
+  }
+}
