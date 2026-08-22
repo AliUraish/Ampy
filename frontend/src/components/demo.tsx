@@ -119,6 +119,7 @@ export function DemoOne(): React.ReactElement {
             agent,
             text: result.message,
             logs: result.logs,
+            deals: result.deals,
           },
         ]);
       }
