@@ -1,26 +1,28 @@
 import { NextResponse } from "next/server";
 
-export const maxDuration = 60;
+import { mockScrapedCalendar } from "@/lib/calendar";
+
+export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const seller = process.env.SELLER_URL || "http://127.0.0.1:8000";
-  const body = await request.text();
+  const body = await request.json().catch(() => ({})) as { query?: string; item_interests?: string[] };
+  const query = body.query || body.item_interests?.[0] || "general";
+  const mock = mockScrapedCalendar(query);
 
-  try {
-    const response = await fetch(`${seller}/events/discover`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(18_000),
-    });
-    if (!response.ok) {
-      return NextResponse.json({ opportunities: [], notes: ["Event scout is rate-limited; flip deals still available."] });
-    }
-    const payload = await response.json();
-    return NextResponse.json(payload);
-  } catch {
-    return NextResponse.json({ opportunities: [], notes: ["Event scout unavailable; flip deals still available."] });
-  }
+  return NextResponse.json({
+    area: "San Francisco Bay Area",
+    search_window: "next 21 days",
+    source: "mock_scraped_calendar",
+    opportunities: mock.map((event) => ({
+      title: event.title,
+      url: event.url,
+      date_and_time: event.date,
+      location: event.location,
+      why_it_may_be_valuable: event.why,
+      likely_items: event.items,
+      opportunity_score: event.score,
+    })),
+    notes: ["Mock-scraped Lu.ma / Eventbrite / flea calendar kept in reseller context."],
+  });
 }
