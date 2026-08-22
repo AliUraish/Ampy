@@ -10,7 +10,27 @@ const config: Config = {
     extend: {
       colors: {
         background: "var(--background)",
+        border: "var(--border)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        destructive: "var(--destructive)",
         foreground: "var(--foreground)",
+        input: "var(--input)",
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        ring: "var(--ring)",
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
       },
     },
   },
