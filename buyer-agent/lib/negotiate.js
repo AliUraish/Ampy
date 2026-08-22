@@ -24,10 +24,7 @@
 // the difference between "the prompt says don't" and "the code won't let
 // it" — the latter holds even if the model ignores the former.
 
-const Anthropic = require("@anthropic-ai/sdk");
-
-const client = new Anthropic();
-const MODEL = "claude-opus-5";
+const llm = require("./llm.js");
 
 // How far below its floor the seller agent is allowed to go as a final
 // concession to close an otherwise-good deal (mirrors the "small final
@@ -98,32 +95,22 @@ const NEGOTIATION_TURN_SCHEMA = {
  * known ground-truth `minAcceptablePrice`. This is ALWAYS an estimate.
  */
 async function estimateFloorPrice(listing) {
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 512,
-    output_config: { format: { type: "json_schema", schema: FLOOR_ESTIMATE_SCHEMA } },
+  return llm.chatJSON({
+    maxTokens: 512,
+    schema: FLOOR_ESTIMATE_SCHEMA,
     system:
       "You are an experienced secondhand-marketplace appraiser. Given a listing's asking price, " +
       "condition, and description, estimate the lowest price a reasonable seller of this specific " +
       "item would plausibly accept. Base it on typical markdown behavior for the category and " +
       "condition described — don't just guess a flat percentage. Be realistic, not generous to " +
       "either side.",
-    messages: [
-      {
-        role: "user",
-        content:
-          `Listing: ${listing.title}\n` +
-          `Category: ${listing.category}\n` +
-          `Asking price: ${listing.price}\n` +
-          `Condition: ${listing.condition || "unknown"}\n` +
-          `Description: ${listing.description || "(none provided)"}`,
-      },
-    ],
-  });
-
-  const text = response.content.find((b) => b.type === "text")?.text;
-  const parsed = JSON.parse(text);
-  return parsed; // { minAcceptablePrice, rationale }
+    user:
+      `Listing: ${listing.title}\n` +
+      `Category: ${listing.category}\n` +
+      `Asking price: ${listing.price}\n` +
+      `Condition: ${listing.condition || "unknown"}\n` +
+      `Description: ${listing.description || "(none provided)"}`,
+  }); // { minAcceptablePrice, rationale }
 }
 
 function buildSystemPrompt({ role, listing, floorPrice, buyerBudget, style }) {
@@ -174,16 +161,18 @@ async function runTurn({ role, listing, floorPrice, buyerBudget, style, transcri
     });
   }
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 512,
-    output_config: { format: { type: "json_schema", schema: NEGOTIATION_TURN_SCHEMA } },
-    system: buildSystemPrompt({ role, listing, floorPrice, buyerBudget, style }),
-    messages,
-  });
+  // The transcript alternates assistant/user from this agent's point of
+  // view; chatJSON takes one user string, so hand the turns over inline.
+  const convo = messages
+    .map((m) => `${m.role === "assistant" ? "You said" : "They said"}: ${m.content}`)
+    .join("\n");
 
-  const text = response.content.find((b) => b.type === "text")?.text;
-  return JSON.parse(text);
+  return llm.chatJSON({
+    maxTokens: 512,
+    schema: NEGOTIATION_TURN_SCHEMA,
+    system: buildSystemPrompt({ role, listing, floorPrice, buyerBudget, style }),
+    user: convo + "\n\nRespond with your next negotiation turn.",
+  });
 }
 
 /**

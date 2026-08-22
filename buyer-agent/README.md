@@ -8,7 +8,7 @@ seller-agent (both powered by Claude) negotiate the price for you.
 ```sh
 npm install
 cp .env.example .env
-# edit .env and set ANTHROPIC_API_KEY
+# edit .env and set MISTRAL_API_KEY
 npm start
 ```
 
@@ -18,7 +18,9 @@ Then open http://localhost:3000.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Required for negotiation, floor-price estimation, and seller-photo vision detection. |
+| `MISTRAL_API_KEY` | — | Required for the buyer agent, negotiation, floor-price estimation, and seller-photo vision detection. Get one at console.mistral.ai. |
+| `MISTRAL_MODEL` | `mistral-large-latest` | Chat/agent model. |
+| `MISTRAL_VISION_MODEL` | `pixtral-large-latest` | Vision model for `/sell` photo drafts. |
 | `PORT` | `3000` | Server port. |
 | `USE_MOCK_DATA` | `false` | Force `GET /api/search` to use `data/listings.js` instead of a live Craigslist fetch. Also used automatically as a fallback when a live fetch fails or returns nothing. |
 | `CRAIGSLIST_LOCATION` | `sfbay` | Default Craigslist subdomain to search (e.g. `sfbay`, `newyork`, `losangeles`). Overridable per-request via the `location` query param. |
@@ -26,7 +28,7 @@ Then open http://localhost:3000.
 ### Dependencies
 
 `express`, `cheerio` (Craigslist HTML parsing), `multer` (photo uploads),
-`dotenv`, `@anthropic-ai/sdk`, `node-cron` (weekly repost-check schedule —
+`dotenv`, `node-cron` (weekly repost-check schedule —
 see Telegram section below). Telegram itself is called via plain `fetch`
 against its Bot API, no SDK needed.
 

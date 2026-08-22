@@ -25,10 +25,9 @@
 require("dotenv").config({ quiet: true });
 
 const express = require("express");
-const Anthropic = require("@anthropic-ai/sdk");
+const path = require("path");
+const llm = require(path.join(__dirname, "..", "lib", "llm.js"));
 
-const client = new Anthropic();
-const MODEL = "claude-opus-5";
 const PORT = process.env.MOCK_SELLER_PORT || 4000;
 
 const app = express();
@@ -47,14 +46,10 @@ function floorFor(listing) {
   return floors.get(listing.listingId);
 }
 
-async function claude({ system, user, maxTokens = 400 }) {
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  return res.content.find((b) => b.type === "text")?.text?.trim() || "";
+// One helper, one model family: this reference seller agent runs on
+// Mistral, same as the real one being built for the hackathon.
+async function ask({ system, user, maxTokens = 400 }) {
+  return llm.chatText({ system, user, maxTokens });
 }
 
 // POST /ask — answer a buyer's question about a listing.
@@ -65,7 +60,7 @@ app.post("/ask", async (req, res) => {
   console.log(`[mock-seller] ask about "${listing.title}": ${question}`);
 
   try {
-    const answer = await claude({
+    const answer = await ask({
       system:
         "You are the seller of a secondhand item, answering a buyer's question by text. Answer in one or two " +
         "short, plain sentences, like a real person would. Be honest about flaws — invent specific, plausible " +
@@ -114,7 +109,7 @@ app.post("/negotiate", async (req, res) => {
   }
 
   try {
-    const message = await claude({
+    const message = await ask({
       maxTokens: 200,
       system:
         "You are a secondhand seller haggling by text. One or two short sentences, plain and natural, like a real " +
