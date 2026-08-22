@@ -434,6 +434,107 @@ async function runScan(params, send, startedAt) {
   send("done", { deals, scored, ms: Date.now() - startedAt, source });
 }
 
+const FAST_MARKET_LIMIT = 4;
+const FAST_DETAIL_LIMIT = 12;
+
+function compsScore(listing, compsMedian, compsN) {
+  const price = listing.price;
+  const fairValue = compsMedian;
+  const discount = fairValue > 0 ? (fairValue - price) / fairValue : 0;
+  const score = Math.max(0, Math.min(100, Math.round(50 + discount * 80 + Math.min(compsN, 8))));
+  return { fairValue, score, margin: discount };
+}
+
+async function runFastScrapeScan(params, send, startedAt) {
+  const location = String(params.location || "us").toLowerCase();
+  const category = String(params.category || "general");
+  const query = String(params.query || "").trim();
+  const maxPrice = params.maxPrice;
+  const emit = (event, data) => send(event, data);
+
+  let listings;
+  let source = "craigslist";
+  let marketsSearched = 1;
+
+  if (location === "us") {
+    const previousLimit = process.env.US_MARKET_LIMIT;
+    process.env.US_MARKET_LIMIT = String(Math.min(US_MARKET_LIMIT, FAST_MARKET_LIMIT));
+    try {
+      const result = await searchUnitedStates({ query, category, maxPrice, emit });
+      listings = result.listings;
+      marketsSearched = result.marketsSearched;
+    } finally {
+      if (previousLimit === undefined) delete process.env.US_MARKET_LIMIT;
+      else process.env.US_MARKET_LIMIT = previousLimit;
+    }
+  } else {
+    listings = extractCraigslistListings(
+      await searchCraigslist({ location, category, query, maxPrice }),
+    );
+  }
+
+  listings = listings.slice(0, LIVE_LISTING_LIMIT).map(canonicalListing);
+  emit("progress", { stage: "scan", count: listings.length, markets: marketsSearched, mode: "scrape" });
+
+  const prices = listings.map((listing) => listing.price).filter((price) => Number.isFinite(price));
+  const compsMedian = median(prices);
+  const compsN = prices.length;
+  emit("progress", { stage: "comps", median: compsMedian, n: compsN });
+
+  const priced = listings.filter((listing) => Number.isFinite(listing.price));
+  const underMarket = compsMedian == null
+    ? priced
+    : priced.filter((listing) => listing.price < compsMedian);
+  const pool = (underMarket.length ? underMarket : priced)
+    .slice()
+    .sort((a, b) => a.price - b.price)
+    .slice(0, FAST_DETAIL_LIMIT);
+  emit("progress", { stage: "prefilter", candidates: pool.length });
+
+  const detailed = await mapWithConcurrency(
+    pool,
+    3,
+    async (baseListing) => {
+      const detail = await fetchListingDetail(baseListing.url);
+      return mergeDetail(baseListing, detail);
+    },
+    { jitterMs: 120 },
+  );
+
+  let deals = 0;
+  for (const listing of detailed.filter(Boolean)) {
+    const scored = compsScore(listing, compsMedian || listing.price, compsN);
+    const discountPct = scored.fairValue
+      ? Math.max(0, Math.round((1 - listing.price / scored.fairValue) * 100))
+      : 0;
+    emit("deal", {
+      ...listing,
+      compsMedian,
+      compsN,
+      fairValue: scored.fairValue,
+      deal: {
+        score: scored.score,
+        margin: scored.margin,
+        confidence: Math.min(compsN / 8, 1),
+        flags: [],
+        headline: discountPct ? `${discountPct}% under this search's median` : "Live Craigslist listing",
+        why: compsMedian
+          ? `Asking $${listing.price} vs median $${Math.round(compsMedian)} across ${compsN} scraped listings.`
+          : "Scraped from Craigslist; not enough priced comps for a median yet.",
+      },
+    });
+    deals += 1;
+  }
+
+  send("done", {
+    deals,
+    scored: deals,
+    ms: Date.now() - startedAt,
+    source,
+    mode: "scrape",
+  });
+}
+
 async function streamDeals(params = {}, send) {
   if (typeof send !== "function") throw new TypeError("send must be a function");
   const startedAt = Date.now();
@@ -442,6 +543,12 @@ async function streamDeals(params = {}, send) {
     if (String(params.cached || "") === "1") {
       // fast=1: dump the cache instantly (page load); otherwise replay with pacing
       await replayCached(send, startedAt, { fast: String(params.fast || "") === "1" });
+      return;
+    }
+    if (String(params.fast || "") === "1") {
+      // Chat/UI path: scrape Craigslist and return underpriced listings
+      // without waiting on per-listing Mistral appraisals (those 429 on demo keys).
+      await runFastScrapeScan(params, send, startedAt);
       return;
     }
     await runScan(params, send, startedAt);
