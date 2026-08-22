@@ -15,7 +15,7 @@ export const ampyApi = {
     ask: "/api/seller/ask",
     negotiate: "/api/seller/negotiate",
     value: "/api/seller-value",
-    events: "/api/seller/events/discover",
+    events: "/api/reseller-events",
     health: "/api/seller/health",
   },
   /** Deal Finder — proxied to backend/deal-finder. */
