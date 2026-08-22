@@ -75,7 +75,26 @@ const DATE_SORT_CANDIDATE_POOL = 40;
 const MAX_DATE_SORT_WINDOW = 120;
 
 app.use(express.json({ limit: "1mb" }));
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// --- Page routes -----------------------------------------------------------
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/agent", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "agent.html"));
+});
+
+app.get("/sell", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "sell.html"));
+});
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+});
 
 // In-memory index of the most recently seen listings, keyed by id, across
 // every source (mock, craigslist, seller). Live-fetched (craigslist) and
