@@ -12,6 +12,7 @@ dependencies = [
   "mistralai>=1.9,<2",
   "pydantic>=2.11,<3",
   "pydantic-settings>=2.10,<3",
+  "requests>=2.32,<3",
   "uvicorn[standard]>=0.35,<1",
 ]
 
@@ -35,4 +36,3 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-
