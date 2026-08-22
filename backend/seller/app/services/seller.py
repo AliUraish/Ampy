@@ -2,6 +2,12 @@ import re
 
 from app.llm import MistralGateway, format_research, json_for_prompt, normalize_source_url
 from app.models import (
+    AskAnswerDraft,
+    BuyerAskRequest,
+    BuyerAskResponse,
+    BuyerNegotiateRequest,
+    BuyerNegotiateResponse,
+    ConversationMessage,
     NegotiationAction,
     NegotiationRequest,
     NegotiationResponse,
@@ -49,6 +55,14 @@ condition, model, completeness, location, fees, and uncertainty. Use only source
 the research. Return the requested structured result only.
 """.strip()
 
+ASK_SYSTEM_PROMPT = """
+You are a real person answering a buyer's question about an item you are selling. Sound casual and
+natural. Answer only from the listing details and conversation history provided. If the listing
+does not say, say you are not sure rather than inventing specs, condition, or accessories. Do not
+start negotiating or quote a new price unless the buyer asked about price. Keep the answer short
+(1-4 sentences). Return the requested structured result only.
+""".strip()
+
 
 class SellerService:
     def __init__(self, llm: MistralGateway):
@@ -93,6 +107,80 @@ class SellerService:
             rationale=draft.rationale,
             comparables=comparables,
         )
+
+    def answer_question(self, request: BuyerAskRequest) -> BuyerAskResponse:
+        listing = request.listing
+        item_description = self._listing_description(listing)
+        history_lines = "\n".join(f"{m.role}: {m.text}" for m in request.history) or "(none)"
+        draft = self.llm.parse(
+            system=ASK_SYSTEM_PROMPT,
+            user=(
+                f"LISTING:\n{item_description}\n\n"
+                f"PRIOR CONVERSATION:\n{history_lines}\n\n"
+                f"BUYER QUESTION:\n{request.question}"
+            ),
+            response_model=AskAnswerDraft,
+        )
+        return BuyerAskResponse(answer=draft.answer.strip())
+
+    def negotiate_buyer_contract(self, request: BuyerNegotiateRequest) -> BuyerNegotiateResponse:
+        listing = request.listing
+        asking = float(listing.price)
+        floor = (
+            float(listing.minAcceptablePrice)
+            if listing.minAcceptablePrice is not None
+            else round(asking * 0.7, 2)
+        )
+        floor = min(floor, asking)
+        target = round(max(floor, asking * 0.9), 2)
+        if target > asking:
+            target = asking
+        if floor > target:
+            floor = target
+
+        conversation = [
+            ConversationMessage(role=m.role, content=m.text) for m in request.history
+        ]
+        # The current offer is buyer_message; history may already include it —
+        # negotiate() dedupes trailing buyer messages that match.
+        inner = NegotiationRequest(
+            item_description=self._listing_description(listing),
+            buyer_message=request.offer.message,
+            listing_price=asking,
+            target_price=target,
+            floor_price=floor,
+            turn_number=request.round,
+            conversation=conversation,
+        )
+        result = self.negotiate(inner)
+
+        accepted = result.action == NegotiationAction.ACCEPT
+        walk_away = result.action == NegotiationAction.WALK_AWAY
+        counter: float | None
+        if accepted or walk_away:
+            counter = None
+        else:
+            counter = float(result.recommended_price)
+
+        return BuyerNegotiateResponse(
+            message=result.reply.strip(),
+            counterPrice=counter,
+            accepted=accepted,
+            walkAway=walk_away,
+        )
+
+    @staticmethod
+    def _listing_description(listing) -> str:
+        parts = [
+            listing.title,
+            f"Asking price: {listing.price}",
+            f"Condition: {listing.condition}",
+        ]
+        if listing.category:
+            parts.append(f"Category: {listing.category}")
+        if listing.description:
+            parts.append(listing.description)
+        return "\n".join(parts)
 
     def negotiate(self, request: NegotiationRequest) -> NegotiationResponse:
         prior_conversation = list(request.conversation)

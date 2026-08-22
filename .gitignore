@@ -4,4 +4,12 @@
 .venv/
 __pycache__/
 *.py[cod]
-
+node_modules/
+backend/buyer/node_modules/
+backend/buyer/data/conversations.json
+backend/buyer/data/sellerListings.json
+backend/buyer/data/messageLog.json
+backend/buyer/uploads/*
+!backend/buyer/uploads/.gitkeep
+.DS_Store
+*.egg-info/

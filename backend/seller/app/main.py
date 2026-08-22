@@ -6,6 +6,10 @@ from fastapi import Depends, FastAPI, HTTPException
 from app.config import get_settings
 from app.llm import MissingAPIKeyError, MistralGateway
 from app.models import (
+    BuyerAskRequest,
+    BuyerAskResponse,
+    BuyerNegotiateRequest,
+    BuyerNegotiateResponse,
     EventScoutResponse,
     EventSearchRequest,
     NegotiationRequest,
@@ -17,9 +21,12 @@ from app.services.events import EventService
 from app.services.seller import SellerService
 
 app = FastAPI(
-    title="Seller + Sourcing Agents",
+    title="Ampy Seller + Sourcing Agents",
     version="0.1.0",
-    description="Mistral-powered resale valuation, guarded negotiation, and event discovery.",
+    description=(
+        "Mistral-powered resale valuation, guarded negotiation, event discovery, "
+        "and buyer-agent contract endpoints (/ask, /negotiate)."
+    ),
 )
 
 
@@ -46,6 +53,24 @@ def get_event_service(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/ask", response_model=BuyerAskResponse)
+def ask_buyer(
+    request: BuyerAskRequest,
+    service: Annotated[SellerService, Depends(get_seller_service)],
+) -> BuyerAskResponse:
+    """Buyer-agent contract: answer a question about a listing."""
+    return service.answer_question(request)
+
+
+@app.post("/negotiate", response_model=BuyerNegotiateResponse)
+def negotiate_buyer(
+    request: BuyerNegotiateRequest,
+    service: Annotated[SellerService, Depends(get_seller_service)],
+) -> BuyerNegotiateResponse:
+    """Buyer-agent contract: one offer/counter round."""
+    return service.negotiate_buyer_contract(request)
 
 
 @app.post("/seller/value", response_model=ValuationResponse)

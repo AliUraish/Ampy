@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Ampy bridge</title>
+<style>
+  body { font: 13px/1.5 -apple-system, system-ui, sans-serif; width: 280px; margin: 0; padding: 14px; color: #2b241c; }
+  h1 { font-size: 14px; margin: 0 0 2px; }
+  .sub { color: #8a7f72; font-size: 12px; margin: 0 0 12px; }
+  .row { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .on { background: #2e9e5b; } .off { background: #c4443a; }
+  label { font-size: 12px; color: #6b6055; }
+  input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid #ddd4c8; border-radius: 6px; font-size: 12px; box-sizing: border-box; }
+  .note { color: #8a7f72; font-size: 11px; margin-top: 10px; line-height: 1.45; }
+  .err { color: #c4443a; font-size: 11px; margin-top: 6px; word-break: break-word; }
+</style>
+<h1>Ampy bridge</h1>
+<p class="sub">Lets your buyer agent search Marketplace in this browser.</p>
+
+<div class="row">
+  <span><span id="dot" class="dot off"></span><span id="state">checking…</span></span>
+  <label><input type="checkbox" id="enabled" checked /> on</label>
+</div>
+
+<div id="last" class="sub"></div>
+<div id="err" class="err"></div>
+
+<label for="server">Ampy server</label>
+<input type="text" id="server" placeholder="http://localhost:3000" />
+
+<p class="note">
+  Reads Marketplace search results in your own signed-in session and sends them
+  to your local Ampy server. Nothing is sent anywhere else, and your Facebook
+  login is never read or stored.
+</p>
+<script src="popup.js"></script>
