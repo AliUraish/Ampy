@@ -15,6 +15,10 @@ const DEAL_FINDER_URL = process.env.DEAL_FINDER_URL || "http://127.0.0.1:4747";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Deal Finder / buyer SSE and seller valuation outlive the default proxy cut-off.
+  experimental: {
+    proxyTimeout: 120_000,
+  },
   async rewrites() {
     // Next owns /api/products. Everything else under these prefixes is proxied
     // to the Ampy backends so the browser stays same-origin.
