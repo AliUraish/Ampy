@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AI Prompt Box",
-  description: "A standalone multimodal prompt composer built with Next.js and shadcn/ui.",
+  title: "Ampy",
+  description: "Ampy — product discovery, deal finder, seller valuation, and buyer agent in one chat.",
 };
 
 export default function RootLayout({
