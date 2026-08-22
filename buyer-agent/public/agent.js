@@ -27,6 +27,9 @@ const threadsTitle = document.getElementById("threads-title");
 const capsEl = document.getElementById("capabilities");
 
 let controller = null;
+// Listings seen so far in the current run, so cards can appear while the
+// agent is still working instead of only at the end.
+const liveListings = new Map();
 
 // --- helpers ---------------------------------------------------------------
 
@@ -337,6 +340,7 @@ async function run(e) {
   stopBtn.style.display = "";
   runHint.textContent = "";
 
+  liveListings.clear();
   controller = new AbortController();
 
   try {
@@ -377,7 +381,13 @@ async function run(e) {
           continue; // a truncated frame — the next read completes it
         }
 
-        if (event.type === "result") {
+        if (event.type === "listings") {
+          // Live cards during the run, replaced by the richer final render
+          // when the result arrives. Merge rather than overwrite, since a
+          // later search shouldn't wipe out earlier finds.
+          event.listings.forEach((l) => liveListings.set(l.id, l));
+          renderResults([...liveListings.values()], []);
+        } else if (event.type === "result") {
           renderResults(event.listings || [], event.negotiations || []);
           if (event.summary) {
             summaryEl.textContent = event.summary;

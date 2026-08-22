@@ -512,15 +512,19 @@ app.post("/api/agent/run", async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no"); // don't let a proxy buffer the stream
   res.flushHeaders();
 
-  const send = (event) => {
-    if (!res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`);
-  };
+  // Detect the client going away on the RESPONSE, not the request.
+  // req.on("close") fires when the request stream finishes — which for a
+  // POST with a small JSON body is immediately, long before the client
+  // actually disconnects. Using it here silently suppressed every streamed
+  // event: the agent ran fine server-side and the UI showed nothing.
+  // res.on("close") is the one that means "the socket went away".
+  let clientGone = false;
+  res.on("close", () => { clientGone = true; });
 
-  // If the buyer closes the tab mid-run, stop writing — the agent finishes
-  // its current step either way, but nothing should try to write to a dead
-  // socket.
-  let aborted = false;
-  req.on("close", () => { aborted = true; });
+  const send = (event) => {
+    if (clientGone || res.writableEnded) return;
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
 
   try {
     const result = await runBuyerAgent({
@@ -529,7 +533,7 @@ app.post("/api/agent/run", async (req, res) => {
       location: location || CRAIGSLIST_LOCATION,
       listingIndex: recentListingsById,
       allowContact: allowContact !== false,
-      onEvent: (event) => { if (!aborted) send(event); },
+      onEvent: send,
     });
 
     send({ type: "result", ...result });

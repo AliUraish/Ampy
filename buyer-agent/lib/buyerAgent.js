@@ -167,10 +167,14 @@ function buildSystemPrompt({ location, budget, canSend }) {
     "secondhand marketplace at once, and come back with a short, honest shortlist of what's actually out there.",
     "",
     "How to work:",
-    "- Search first, and search more than once if the first pass is thin or the wording could vary.",
+    "- Search first. Two or three well-chosen searches, not six — each one costs the buyer real waiting time,",
+    "  and a second phrasing of the same query rarely earns its keep. Search again only if a pass genuinely",
+    "  came back thin or wrong.",
     "- Open the promising listings with get_listing_details before recommending them. A search row is a headline;",
     "  the description is where the condition, the flaws, and the missing charger live.",
-    "- Prefer a short shortlist of genuinely good matches over a long list padded with near-misses.",
+    "- Prefer a short shortlist of genuinely good matches over a long list padded with near-misses. Open at most",
+    "  4 listings, question at most 3 sellers, and negotiate on at most 2 — the ones you'd actually recommend.",
+    "  Being thorough on the right two beats being shallow on six.",
     "- Report the real asking price. Never estimate, average, or round a price the listing states.",
     "- If something is unknown — no photo, no post date, no stated condition — say it's unknown. Do not fill gaps",
     "  with plausible guesses. A buyer acting on an invented detail is worse off than one told we don't know.",
@@ -299,6 +303,17 @@ async function runBuyerAgent({
     listings.forEach(remember);
 
     emit({ type: "search_result", query, count: listings.length, sources: [...sourcesUsed] });
+    // Push the listings themselves, not just a count. A run takes minutes;
+    // without this the buyer stares at an activity log with no results until
+    // the very end, even though we already have real listings in hand.
+    emit({
+      type: "listings",
+      listings: listings.map((l) => ({
+        id: l.id, title: l.title, price: l.price, condition: l.condition,
+        location: l.location, imageUrl: l.imageUrl, url: l.url, source: l.source,
+        description: truncate(l.description, 260),
+      })),
+    });
 
     return {
       found: listings.length,
@@ -520,11 +535,10 @@ async function runBuyerAgent({
   for (let step = 0; step < maxSteps; step++) {
     const response = await client.messages.create({
       model: MODEL,
-      // The closing summary covers several listings with condition notes and
-      // negotiation outcomes, and 2048 was truncating it mid-sentence. Tool
-      // turns are far shorter than this, so the headroom only gets used
-      // where it's actually needed.
-      max_tokens: 4096,
+      // Enough headroom for a multi-listing closing summary without
+      // truncating mid-sentence (2048 did), but not so much that the final
+      // turn adds a minute of generation to a run the buyer is waiting on.
+      max_tokens: 3000,
       system: buildSystemPrompt({ location, budget, canSend }),
       tools: TOOLS,
       messages,
