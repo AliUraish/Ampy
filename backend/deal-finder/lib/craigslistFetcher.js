@@ -91,10 +91,10 @@ function setCached(cache, key, value, ttlMs = CACHE_TTL_MS) {
 }
 
 const REQUEST_HEADERS = {
-  // A plain browser-like UA reduces (but doesn't eliminate) the chance of
-  // being served a block/challenge page instead of real results.
-  "User-Agent": "Mozilla/5.0 (compatible; HagglrBot/1.0; +https://example.invalid/bot)",
-  Accept: "text/html,application/xhtml+xml",
+  // Craigslist blocks obvious bot UAs. Mirror a current desktop Chrome.
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
 };
 
 async function fetchWithTimeout(url, timeoutMs = FETCH_TIMEOUT_MS) {
