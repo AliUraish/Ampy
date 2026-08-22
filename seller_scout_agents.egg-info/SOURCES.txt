@@ -5,6 +5,7 @@ app/config.py
 app/llm.py
 app/main.py
 app/models.py
+app/search.py
 app/services/__init__.py
 app/services/events.py
 app/services/seller.py
