@@ -4,9 +4,8 @@ An API containing two Mistral-powered agents for a resale workflow:
 
 1. **Seller agent** — researches an item's low/high resale value and negotiates firmly inside
    deterministic price guardrails.
-2. **Event scout** — searches Lu.ma, Eventbrite, estate-sale sites, auction listings, local
-   calendars, flea markets, swap meets, and similar sources, then ranks source-backed events by
-   likely sourcing value.
+2. **Event scout** — searches Lu.ma and other public event sources for future local events that may
+   increase demand for products a reseller can promote.
 
 The agents recommend actions. They do not automatically message buyers, purchase inventory, or
 claim that an event is profitable without evidence.
@@ -101,4 +100,3 @@ ruff check .
 - Add marketplace-specific sold-data APIs for stronger comps.
 - Run the event scout daily and alert only for new, high-scoring events.
 - Add inventory categories with category-specific fees, sell-through time, and shipping cost.
-
