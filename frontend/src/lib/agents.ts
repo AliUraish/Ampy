@@ -267,6 +267,7 @@ export async function runDealFinderAgent(
 export async function runSellerAgent(query: string, signal: AbortSignal): Promise<{
   message: string;
   valuation: ChatTurn["valuation"];
+  deals: DealCard[];
 }> {
   const response = await fetch(ampyApi.seller.value, {
     method: "POST",
@@ -297,10 +298,67 @@ export async function runSellerAgent(query: string, signal: AbortSignal): Promis
   const low = Number(payload.low_value);
   const high = Number(payload.high_value);
   const rationale = typeof payload.rationale === "string" ? payload.rationale : undefined;
+  const comparables = Array.isArray(payload.comparables) ? payload.comparables as Record<string, unknown>[] : [];
 
   return {
     message: `List around $${listPrice.toFixed(0)} (floor $${floor.toFixed(0)}). Range $${low.toFixed(0)}–$${high.toFixed(0)}.`,
     valuation: { listPrice, floor, low, high, rationale },
+    deals: comparables.map((comp, index) => ({
+      id: String(comp.url || index),
+      title: String(comp.title || "Comparable"),
+      price: typeof comp.price === "number" ? comp.price : Number(comp.price) || null,
+      url: typeof comp.url === "string" ? comp.url : undefined,
+      location: typeof comp.notes === "string" ? comp.notes : undefined,
+      why: "Live comparable used for this valuation.",
+    })),
+  };
+}
+
+export async function runResellerAgent(
+  query: string,
+  signal: AbortSignal,
+  onLog: (line: string) => void,
+): Promise<{ message: string; deals: DealCard[]; events: EventCard[] }> {
+  onLog("scanning underpriced inventory…");
+  const result = await runDealFinderAgent(query, signal, onLog);
+
+  let events: EventCard[] = [];
+  try {
+    const response = await fetch(ampyApi.seller.events, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        area: "San Francisco Bay Area",
+        days_ahead: 21,
+        item_interests: [query],
+        minimum_score: 40,
+        max_results: 5,
+      }),
+      signal: AbortSignal.any ? AbortSignal.any([signal, AbortSignal.timeout(18_000)]) : signal,
+    });
+    if (response.ok) {
+      const payload = await response.json() as { opportunities?: Record<string, unknown>[] };
+      events = (payload.opportunities || []).map((event) => ({
+        title: String(event.title || "Event"),
+        url: typeof event.url === "string" ? event.url : undefined,
+        date: typeof event.date_and_time === "string" ? event.date_and_time : undefined,
+        location: typeof event.location === "string" ? event.location : undefined,
+        why: typeof event.why_it_may_be_valuable === "string" ? event.why_it_may_be_valuable : undefined,
+        items: Array.isArray(event.likely_items) ? event.likely_items.map(String) : undefined,
+        score: typeof event.opportunity_score === "number" ? event.opportunity_score : undefined,
+      }));
+      if (events.length) onLog(`${events.length} local demand events`);
+    }
+  } catch {
+    onLog("event scout skipped");
+  }
+
+  return {
+    message: result.deals.length
+      ? `Found ${result.deals.length} flip candidates${events.length ? ` and ${events.length} upcoming demand events` : ""}. Buy under median, list near local comps.`
+      : "No strong flip inventory in this pass — try a tighter niche.",
+    deals: result.deals,
+    events,
   };
 }
 
@@ -313,52 +371,70 @@ export async function runBuyerAgent(
   let recommendation = "";
   let deals: DealCard[] = [];
 
-  await readSsePost(
-    ampyApi.buyer.agentRun,
-    { request: query, allowContact: false },
-    signal,
-    (event) => {
-      const type = String(event.type || "");
-      if (type === "thinking" && event.text) {
-        const line = String(event.text);
-        logs.push(line);
-        onLog(line);
-      } else if (type === "search") {
-        onLog(`search: ${String(event.query || "")}`);
-      } else if (type === "search_result") {
-        onLog(`found ${String(event.count ?? "?")} listings`);
-      } else if (type === "listings" && Array.isArray(event.listings)) {
-        deals = (event.listings as Record<string, unknown>[]).map((listing, index) =>
-          toDealCard(listing, String(listing.id || index)),
-        );
-        onLog(`shortlist ready · ${deals.length} listings`);
-      } else if (type === "open_listing") {
-        onLog(`open: ${String(event.title || event.listingId || "")}`);
-      } else if (type === "contacting" || type === "contacted" || type === "negotiating" || type === "negotiated") {
-        onLog(`${type}: ${String(event.title || event.listingId || "")}`);
-      } else if (type === "done" || type === "result") {
-        recommendation = String(event.summary || event.recommendation || event.message || recommendation || "Buyer agent finished.");
-        if (Array.isArray(event.listings) && event.listings.length && deals.length === 0) {
-          deals = (event.listings as Record<string, unknown>[]).map((listing, index) =>
+  onLog("searching Craigslist…");
+  try {
+    const params = new URLSearchParams({ q: query, limit: "12" });
+    const response = await fetch(`${ampyApi.buyer.search}?${params.toString()}`, { signal });
+    const payload = await response.json() as { listings?: Record<string, unknown>[]; total?: number };
+    if (response.ok && Array.isArray(payload.listings) && payload.listings.length) {
+      deals = payload.listings.map((listing, index) => toDealCard(listing, String(listing.id || index)));
+      const priced = deals.filter((deal) => deal.price != null).sort((a, b) => (a.price || 0) - (b.price || 0));
+      const best = priced[0];
+      recommendation = best
+        ? `Found ${deals.length} live listings. Lowest ask is $${best.price} — ${best.title}.`
+        : `Found ${deals.length} live listings.`;
+      onLog(`found ${deals.length} listings`);
+    }
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    onLog("listing search failed, trying buyer agent…");
+  }
+
+  try {
+    const timed = AbortSignal.timeout(22_000);
+    const combined = typeof AbortSignal.any === "function" ? AbortSignal.any([signal, timed]) : timed;
+    await readSsePost(
+      ampyApi.buyer.agentRun,
+      { request: query, allowContact: false },
+      combined,
+      (event) => {
+        const type = String(event.type || "");
+        if (type === "thinking" && event.text) {
+          const line = String(event.text);
+          logs.push(line);
+          onLog(line);
+        } else if (type === "search") {
+          onLog(`search: ${String(event.query || "")}`);
+        } else if (type === "search_result") {
+          onLog(`found ${String(event.count ?? "?")} listings`);
+        } else if (type === "listings" && Array.isArray(event.listings)) {
+          const streamed = (event.listings as Record<string, unknown>[]).map((listing, index) =>
             toDealCard(listing, String(listing.id || index)),
           );
+          if (streamed.length) deals = streamed;
+          onLog(`shortlist ready · ${streamed.length} listings`);
+        } else if (type === "done" || type === "result") {
+          recommendation = String(event.summary || event.recommendation || event.message || recommendation);
+        } else if (type === "warning") {
+          onLog(`warning: ${String(event.error || event.source || "warning")}`);
         }
-      } else if (type === "error") {
-        throw new Error(String(event.error || "Buyer agent error"));
-      } else if (type === "warning") {
-        onLog(`warning: ${String(event.error || event.source || "warning")}`);
-      } else if (event.message) {
-        const line = String(event.message);
-        logs.push(line);
-        onLog(line);
-      }
-    },
-  );
+      },
+    );
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError" && signal.aborted) throw error;
+    if (!deals.length) {
+      throw error instanceof Error ? error : new Error("Buyer agent failed.");
+    }
+    logs.push("Buyer LLM skipped — showing scraped listings.");
+    onLog("showing scraped listings");
+  }
+
+  if (!deals.length && !recommendation) {
+    throw new Error("Buyer agent found no live listings. Try a more specific request.");
+  }
 
   return {
-    message: recommendation || (deals.length
-      ? `Found ${deals.length} live listings.`
-      : logs.length ? "Buyer agent finished." : "Buyer agent returned no recommendation."),
+    message: recommendation || `Found ${deals.length} live listings.`,
     logs: logs.slice(-12),
     deals,
   };
