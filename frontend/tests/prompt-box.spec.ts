@@ -9,7 +9,7 @@ test("returns five live product images as the main result", async ({ page }) => 
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Find your next favorite thing." })).toBeVisible();
-  await expect(page.getByLabel("Prompt")).toHaveAttribute("placeholder", "what products can i search for you");
+  await expect(page.getByLabel("Prompt")).toHaveAttribute("placeholder", "Pick Seller, Reseller, or Buyer — then say what you need");
   await page.getByLabel("Prompt").fill("wireless mechanical keyboard under 100 dollars");
   await page.getByRole("button", { name: "Send message" }).click();
 
