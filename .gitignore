@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 node_modules/
 backend/buyer/node_modules/
+backend/deal-finder/node_modules/
+backend/deal-finder/.venv/
+backend/deal-finder/data/lastScan.json
 backend/buyer/data/conversations.json
 backend/buyer/data/sellerListings.json
 backend/buyer/data/messageLog.json
