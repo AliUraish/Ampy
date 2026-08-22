@@ -6,12 +6,38 @@
 
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
+import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
+
+function loadRootEnv(rootDir) {
+  const envPath = path.join(rootDir, ".env");
+  let loaded = 0;
+  try {
+    for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let value = trimmed.slice(eq + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (process.env[key] === undefined) {
+        process.env[key] = value;
+        loaded += 1;
+      }
+    }
+  } catch {
+    return 0;
+  }
+  return loaded;
+}
 const SELLER_DIR = path.join(__dirname, "seller");
 const BUYER_DIR = path.join(__dirname, "buyer");
 const DEAL_FINDER_DIR = path.join(__dirname, "deal-finder");
@@ -81,8 +107,9 @@ async function waitForHealth(url, { attempts = 90, intervalMs = 500, label = "se
 }
 
 async function main() {
+  const loaded = loadRootEnv(ROOT);
   console.log(`[start] Ampy full stack`);
-  console.log(`[start] env: ${path.join(ROOT, ".env")}`);
+  console.log(`[start] env: ${path.join(ROOT, ".env")} (${loaded} vars)`);
   console.log(`[start] frontend :${FRONTEND_PORT}  seller :${SELLER_PORT}  buyer :${BUYER_PORT}  deal-finder :${DEAL_FINDER_PORT}`);
 
   const sellerCmd = process.env.SELLER_CMD
