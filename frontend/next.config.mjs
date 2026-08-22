@@ -9,7 +9,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnvConfig(path.join(__dirname, ".."));
 loadEnvConfig(__dirname);
 
+const BUYER_URL = process.env.BUYER_URL || "http://127.0.0.1:3001";
+const SELLER_URL = process.env.SELLER_URL || "http://127.0.0.1:8000";
+const DEAL_FINDER_URL = process.env.DEAL_FINDER_URL || "http://127.0.0.1:4747";
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async rewrites() {
+    // Next owns /api/products. Everything else under these prefixes is proxied
+    // to the Ampy backends so the browser stays same-origin.
+    return [
+      {
+        source: "/api/buyer/:path*",
+        destination: `${BUYER_URL}/api/:path*`,
+      },
+      {
+        source: "/api/seller/:path*",
+        destination: `${SELLER_URL}/:path*`,
+      },
+      {
+        source: "/api/deal-finder/:path*",
+        destination: `${DEAL_FINDER_URL}/api/:path*`,
+      },
+      {
+        source: "/api/deals",
+        destination: `${DEAL_FINDER_URL}/api/deals`,
+      },
+    ];
+  },
+};
 
 export default nextConfig;
