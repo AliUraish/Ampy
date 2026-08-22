@@ -300,6 +300,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               <Button
                 type="button"
                 size="icon"
+                disabled={isLoading}
                 aria-label={isRecording ? "Stop recording" : hasContent ? "Send message" : "Start voice message"}
                 className={cn(
                   "shrink-0 rounded-full",
