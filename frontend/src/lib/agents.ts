@@ -373,7 +373,10 @@ export async function runBuyerAgent(
 
   onLog("searching Craigslist…");
   try {
-    const params = new URLSearchParams({ q: query, limit: "12" });
+    const budgetMatch = query.match(/(?:under|max|below)\s*\$?\s*(\d+)/i);
+    const cleanedQuery = query.replace(/(?:under|max|below)\s*\$?\s*\d+/i, "").trim() || query;
+    const params = new URLSearchParams({ q: cleanedQuery, limit: "12" });
+    if (budgetMatch) params.set("maxPrice", budgetMatch[1]);
     const response = await fetch(`${ampyApi.buyer.search}?${params.toString()}`, { signal });
     const payload = await response.json() as { listings?: Record<string, unknown>[]; total?: number };
     if (response.ok && Array.isArray(payload.listings) && payload.listings.length) {
@@ -388,6 +391,14 @@ export async function runBuyerAgent(
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     onLog("listing search failed, trying buyer agent…");
+  }
+
+  if (deals.length) {
+    return {
+      message: recommendation || `Found ${deals.length} live listings.`,
+      logs: logs.slice(-12),
+      deals,
+    };
   }
 
   try {
