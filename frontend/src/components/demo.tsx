@@ -232,7 +232,7 @@ function TurnCard({ turn }: { turn: ChatTurn }): React.ReactElement {
           {turn.valuation?.rationale ? <p className="mt-2 text-xs leading-5 text-white/50">{turn.valuation.rationale}</p> : null}
         </div>
       </div>
-      {turn.products?.length === 5 ? <ProductGrid products={turn.products} /> : null}
+      {turn.products?.length ? <ProductGrid products={turn.products} /> : null}
       {turn.deals?.length ? <DealGrid deals={turn.deals} /> : null}
       {turn.logs?.length && turn.agent === "buyer" ? (
         <ul className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[11px] text-white/45">
