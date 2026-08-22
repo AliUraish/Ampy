@@ -441,11 +441,28 @@ export async function runBuyerAgent(
     onLog("listing search failed, trying buyer agent…");
   }
 
+  const priced = deals.filter((deal) => deal.price != null && deal.price > 0).sort((a, b) => (a.price || 0) - (b.price || 0));
+  const target = priced[Math.floor(priced.length / 3)] || priced[0];
+  const budgetMatch = query.match(/(?:under|max|below)\s*\$?\s*(\d+)/i);
+  let negotiation: NegotiationLine[] = [];
+  let session: BuyerSession | null = null;
+  if (target?.price) {
+    const asking = target.price;
+    const budget = budgetMatch ? Number(budgetMatch[1]) : Math.round(asking * 0.9);
+    const floor = Math.round(asking * 0.78);
+    session = { item: query, asking, floor, budget, title: target.title, turn: 2 };
+    negotiation = runOpeningNegotiation({ item: target.title, asking, floor, budget });
+    onLog(`negotiating ${target.title}`);
+    recommendation = `${recommendation} I opened a negotiation on "${target.title}" (ask $${asking}, budget $${budget}).`;
+  }
+
   if (deals.length) {
     return {
       message: recommendation || `Found ${deals.length} live listings.`,
       logs: logs.slice(-12),
       deals,
+      negotiation,
+      session,
     };
   }
 
@@ -496,5 +513,40 @@ export async function runBuyerAgent(
     message: recommendation || `Found ${deals.length} live listings.`,
     logs: logs.slice(-12),
     deals,
+    negotiation,
+    session,
+  };
+}
+
+export function continueBuyerNegotiation(session: BuyerSession, sellerMessage: string): {
+  message: string;
+  negotiation: NegotiationLine[];
+  session: BuyerSession;
+} {
+  const lastAsk = extractOffer(sellerMessage) ?? session.asking;
+  const offer = buyerTurnForContinue(session, lastAsk);
+  const reply = sellerTurn({
+    item: session.title,
+    asking: session.asking,
+    floor: session.floor,
+    offered: offer.price,
+    round: session.turn + 1,
+  });
+  return {
+    message: `${offer.text}\nSeller: ${reply.text}`,
+    negotiation: [
+      { role: "buyer", text: offer.text, price: offer.price },
+      { role: "seller", text: reply.text, price: reply.price },
+    ],
+    session: { ...session, turn: session.turn + 1, asking: reply.price },
+  };
+}
+
+function buyerTurnForContinue(session: BuyerSession, lastAsk: number): { price: number; text: string } {
+  const ceiling = Math.min(session.budget, lastAsk);
+  const price = Math.min(ceiling, Math.max(1, Math.round(lastAsk * 0.92)));
+  return {
+    price,
+    text: `I can do $${price} cash on the ${session.title} if we wrap this up today.`,
   };
 }
