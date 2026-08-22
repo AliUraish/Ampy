@@ -229,11 +229,11 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const hasContent = input.trim().length > 0 || file !== null;
     const inputPlaceholder =
       mode === "search"
-        ? "Hunt Craigslist deals across the U.S...."
+        ? "What should the reseller flip? e.g. bikes, cameras…"
         : mode === "think"
-          ? "Describe an item to value and negotiate…"
+          ? "Describe an item you want to sell…"
           : mode === "canvas"
-            ? "Tell the buyer agent what to find and haggle…"
+            ? "What should the buyer find and offer on?"
             : placeholder;
 
     return (
@@ -254,7 +254,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         >
           {mode ? (
             <div className="px-3 pb-1 pt-1 text-[11px] uppercase tracking-[0.18em] text-white/35">
-              {mode === "search" ? "Deal Finder" : mode === "think" ? "Seller agent" : "Buyer agent"}
+              {mode === "search" ? "Reseller agent" : mode === "think" ? "Seller agent" : "Buyer agent"}
             </div>
           ) : null}
 
@@ -314,7 +314,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   event.target.value = "";
                 }}
               />
-              <ModeButton active={mode === "search"} label="Deals" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
+              <ModeButton active={mode === "search"} label="Reseller" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
               <Divider />
               <ModeButton active={mode === "think"} label="Seller" color="purple" icon={<BrainCog className="size-4" />} onClick={() => toggleMode("think")} />
               <Divider />
