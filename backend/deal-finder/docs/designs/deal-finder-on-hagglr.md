@@ -17,7 +17,7 @@ Point it at a city + category. The agent scans live Craigslist listings, estimat
 3. `lib/demand.js` — pytrends sidecar (`demand.py`) with static fallback table
 4. `lib/dealScore.js` — pure function: margin, demand, confidence → score 0-100, scam filter
 5. `GET /api/deals?location&category&query` — SSE stream of scan progress + scored deals
-6. `public/deals.html` + `deals.js` — the Deal Feed UI (the demo)
+6. `frontend/` — the Deal Feed UI (served by `backend/deal-finder/server.js`)
 
 ## Scoring
 - `fairValue` = weighted(0.6 comps median, 0.4 Mistral estimate); if |disagreement| > 35% → confidence penalty
