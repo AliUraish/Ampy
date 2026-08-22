@@ -1,6 +1,10 @@
 import { ampyApi } from "@/lib/ampy";
+import { mockScrapedCalendar, type EventCard } from "@/lib/calendar";
+import { extractOffer, runOpeningNegotiation, sellerTurn, type NegotiationLine } from "@/lib/negotiateLocal";
 import { isProductSearchResponse, type Product } from "@/lib/products";
 import type { PromptMode } from "@/components/ui/ai-prompt-box";
+
+export type { EventCard, NegotiationLine };
 
 export type AgentKind = "discover" | "deals" | "reseller" | "seller" | "buyer";
 
@@ -36,16 +40,6 @@ export interface DealCard {
   why?: string;
 }
 
-export interface EventCard {
-  title: string;
-  url?: string;
-  date?: string;
-  location?: string;
-  why?: string;
-  items?: string[];
-  score?: number;
-}
-
 export interface ChatTurn {
   id: string;
   role: "user" | "agent";
@@ -54,6 +48,7 @@ export interface ChatTurn {
   products?: Product[];
   deals?: DealCard[];
   events?: EventCard[];
+  negotiation?: NegotiationLine[];
   logs?: string[];
   valuation?: {
     listPrice?: number;
