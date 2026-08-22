@@ -70,17 +70,26 @@ class SellerService:
 
     def value_item(self, request: ValuationRequest) -> ValuationResponse:
         prompt = self._valuation_search_prompt(request)
-        research_text, references = self.llm.web_research(prompt)
-        allowed_urls = {normalize_source_url(item["url"]) for item in references}
-        draft = self.llm.parse(
-            system=VALUATION_SYSTEM_PROMPT,
-            user=(
-                f"Value this item and return monetary values in {request.currency}.\n"
-                f"REQUEST:\n{json_for_prompt(request)}\n\n"
-                f"{format_research(research_text, references)}"
-            ),
-            response_model=ValuationDraft,
+        user = (
+            f"{prompt}\n\nValue this item and return monetary values in {request.currency}.\n"
+            f"REQUEST:\n{json_for_prompt(request)}"
         )
+        # One web-search + JSON call when available (demo-tier Mistral keys 429
+        # quickly if we research, then parse, as two separate requests).
+        if hasattr(self.llm, "web_parse"):
+            draft, references = self.llm.web_parse(
+                system=VALUATION_SYSTEM_PROMPT,
+                prompt=user,
+                response_model=ValuationDraft,
+            )
+        else:
+            research_text, references = self.llm.web_research(prompt)
+            draft = self.llm.parse(
+                system=VALUATION_SYSTEM_PROMPT,
+                user=f"{user}\n\n{format_research(research_text, references)}",
+                response_model=ValuationDraft,
+            )
+        allowed_urls = {normalize_source_url(item["url"]) for item in references}
 
         margin_floor = round(
             request.purchase_cost * (1 + request.minimum_margin_pct / 100), 2
