@@ -1,102 +1,106 @@
-# Seller + Sourcing Agents
+# Ampy backend
 
-An API containing two Mistral-powered agents for a resale workflow:
+One backend for Ampy’s **buyer** and **seller** agents. Both share the repo-root
+`.env` and start together with a single command. The product frontend is separate.
 
-1. **Seller agent** — researches an item's low/high resale value and negotiates firmly inside
-   deterministic price guardrails.
-2. **Event scout** — searches Lu.ma and other public event sources for future local events that may
-   increase demand for products a reseller can promote.
+```
+backend/
+  start.mjs          # npm start entrypoint
+  seller/            # Python FastAPI — valuation, negotiate, events, /ask + /negotiate
+  buyer/             # Node Express — marketplace search + buyer agent API
+```
 
-The agents recommend actions. They do not automatically message buyers, purchase inventory, or
-claim that an event is profitable without evidence.
+```mermaid
+flowchart LR
+  frontend[Frontend later]
+  buyer[Buyer Node :3000]
+  seller[Seller Python :8000]
+  frontend -->|search ask run| buyer
+  frontend -->|value events| seller
+  buyer -->|"POST /ask /negotiate"| seller
+```
 
 ## Setup
 
-Python 3.11 or newer is required.
+Python 3.11+, [uv](https://docs.astral.sh/uv/), and Node 18+ are required.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
+# Shared Mistral config (same names for both agents)
 cp .env.example .env
+# edit .env — set MISTRAL_API_KEY
+
+# Seller deps
+cd backend/seller && uv sync && cd ../..
+
+# Buyer deps
+npm run install:buyer
 ```
 
-Put your Mistral key in `.env`, then start the API:
+`.env` variables:
+
+```
+MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-medium-latest
+MISTRAL_SEARCH_TOOL=web_search
+```
+
+## Start both
+
+From the repo root:
 
 ```bash
-uvicorn app.main:app --reload
+npm start
 ```
 
-Interactive API documentation is available at <http://127.0.0.1:8000/docs>.
+That runs [`backend/start.mjs`](backend/start.mjs), which:
 
-## 1. Value an item
+1. Starts the seller on `http://127.0.0.1:8000`
+2. Waits for `GET /health`
+3. Starts the buyer on `http://127.0.0.1:3000` with `SELLER_AGENT_URL` pointing at the seller
+
+Ctrl+C stops both.
+
+### Ports
+
+| Service | URL | Role |
+|---|---|---|
+| Buyer API | `http://127.0.0.1:3000` | Search, agent run, ask, negotiate |
+| Seller API | `http://127.0.0.1:8000` | `/ask`, `/negotiate`, `/seller/value`, `/events/discover` |
+
+### Start separately (optional)
 
 ```bash
-curl -X POST http://127.0.0.1:8000/seller/value \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "item_description": "Sony WH-1000XM5 headphones, complete with case",
-    "condition": "good",
-    "area": "San Jose, CA",
-    "purchase_cost": 110,
-    "minimum_margin_pct": 30,
-    "currency": "USD"
-  }'
+npm run start:seller   # terminal 1
+npm run start:buyer    # terminal 2
 ```
 
-The response contains a researched low/high range, a quick-sale value, a list price, and a
-protected floor. The protected floor is never lower than `purchase_cost * (1 + margin)`.
+## Buyer ↔ seller contract
 
-## 2. Negotiate with a buyer
+The Node buyer talks to the Python seller over plain HTTP:
+
+- `POST http://127.0.0.1:8000/ask` → `{ "answer": "..." }`
+- `POST http://127.0.0.1:8000/negotiate` → `{ "message", "counterPrice", "accepted", "walkAway" }`
+
+Existing seller routes remain for valuation and event discovery:
+
+- `POST /seller/value`
+- `POST /seller/negotiate`
+- `POST /events/discover`
+
+Verify the wire contract:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/seller/negotiate \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "item_description": "Sony WH-1000XM5 headphones in good condition",
-    "buyer_message": "Can you do $140 today?",
-    "listing_price": 220,
-    "target_price": 195,
-    "floor_price": 165,
-    "currency": "USD",
-    "turn_number": 1,
-    "conversation": []
-  }'
+node backend/buyer/tools/checkSellerAgent.js http://127.0.0.1:8000
 ```
 
-The application, not the LLM, calculates the minimum permitted price for each turn. It clamps or
-replaces unsafe model output, so a generated reply cannot approve a price below the current limit.
+See [`backend/buyer/INTEGRATION.md`](backend/buyer/INTEGRATION.md) for request/response shapes.
 
-## 3. Find high-upside sourcing events
+## What each agent does
 
-```bash
-curl -X POST http://127.0.0.1:8000/events/discover \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "area": "San Jose, CA",
-    "days_ahead": 21,
-    "radius_miles": 35,
-    "item_interests": ["vintage audio", "cameras", "small furniture"],
-    "max_purchase_budget": 500,
-    "minimum_score": 60,
-    "max_results": 8
-  }'
-```
+**Seller** — researches resale value with guarded negotiation floors, answers
+buyer questions, and discovers local sourcing events.
 
-The score weights discount potential and resale potential most heavily, followed by the likelihood
-that the event actually has buyable inventory and the strength of the evidence. Events without a
-URL returned by Mistral's web search are removed instead of being guessed.
+**Buyer** — searches Craigslist / optional Facebook / Ampy listings, questions
+sellers, and negotiates under a hard budget.
 
-## Test
-
-```bash
-pytest
-ruff check .
-```
-
-## Useful next production steps
-
-- Store valuations, buyer conversations, and event results in a database.
-- Add marketplace-specific sold-data APIs for stronger comps.
-- Run the event scout daily and alert only for new, high-scoring events.
-- Add inventory categories with category-specific fees, sell-through time, and shipping cost.
+Reseller and calendar-context upsell are not in this backend yet.

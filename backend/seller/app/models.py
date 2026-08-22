@@ -87,6 +87,55 @@ class NegotiationResponse(BaseModel):
     guardrail_applied: bool = False
 
 
+# Buyer-agent wire contract (Ampy Node buyer → Python seller).
+class BuyerListing(BaseModel):
+    title: str = Field(min_length=1, max_length=500)
+    price: Money
+    condition: str = Field(default="unknown", max_length=100)
+    description: str = Field(default="", max_length=8000)
+    category: str | None = Field(default=None, max_length=200)
+    minAcceptablePrice: Money | None = None
+
+
+class BuyerHistoryMessage(BaseModel):
+    role: Literal["buyer", "seller"]
+    text: str = Field(min_length=1, max_length=4000)
+    price: Money | None = None
+
+
+class BuyerAskRequest(BaseModel):
+    threadId: str | None = None
+    listingId: str | None = None
+    listing: BuyerListing
+    question: str = Field(min_length=1, max_length=4000)
+    history: list[BuyerHistoryMessage] = Field(default_factory=list, max_length=30)
+
+
+class BuyerAskResponse(BaseModel):
+    answer: str
+
+
+class BuyerOffer(BaseModel):
+    price: Money
+    message: str = Field(min_length=1, max_length=4000)
+
+
+class BuyerNegotiateRequest(BaseModel):
+    threadId: str | None = None
+    listingId: str | None = None
+    listing: BuyerListing
+    offer: BuyerOffer
+    round: int = Field(default=1, ge=1, le=50)
+    history: list[BuyerHistoryMessage] = Field(default_factory=list, max_length=30)
+
+
+class BuyerNegotiateResponse(BaseModel):
+    message: str
+    counterPrice: float | None
+    accepted: bool
+    walkAway: bool
+
+
 DEFAULT_EVENT_SOURCES = [
     "lu.ma",
     "eventbrite.com",
@@ -175,4 +224,8 @@ class EventDraft(BaseModel):
 class EventRankingDraft(BaseModel):
     opportunities: list[EventDraft] = Field(default_factory=list, max_length=25)
     notes: list[str] = Field(default_factory=list)
+
+
+class AskAnswerDraft(BaseModel):
+    answer: str = Field(min_length=1, max_length=4000)
 
