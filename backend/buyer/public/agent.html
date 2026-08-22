@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hagglr — Buyer agent</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/agent.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="/">Hagglr <span class="tag">buyer agent</span></a>
+    <nav class="nav-links">
+      <a href="/">Search</a>
+      <a href="/agent" class="active">Agent</a>
+      <a href="/sell">Sell</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </div>
+
+  <div class="page">
+    <h1>Tell your agent what you're after</h1>
+    <p class="subhead">
+      It searches every connected marketplace at once, opens the promising listings,
+      asks the seller what the listing doesn't say, and haggles for you.
+    </p>
+
+    <div class="sheet">
+      <form id="agent-form">
+        <label for="request">What do you want to buy?</label>
+        <textarea id="request" rows="3"
+          placeholder="e.g. A mountain bike, medium frame, under $600. Find out the real condition and get me the best price."></textarea>
+
+        <div class="field-row" style="margin-top: 14px;">
+          <div>
+            <label for="budget">Your budget ceiling</label>
+            <input type="number" id="budget" min="1" placeholder="e.g. 600" />
+          </div>
+          <div>
+            <label for="location">Search region</label>
+            <select id="location"><option value="">Loading…</option></select>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+          <button type="submit" id="run-btn">Send the agent</button>
+          <button type="button" class="secondary" id="stop-btn" style="display:none;">Stop</button>
+          <span class="hint" id="run-hint"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- What this machine can actually do right now -->
+    <div id="capabilities" class="cap-strip"></div>
+
+    <div class="agent-layout">
+      <div>
+        <h2 class="section-title" id="findings-title" style="display:none;">What it found</h2>
+        <div id="results" class="listing-grid"></div>
+        <div id="summary" class="summary-card" style="display:none;"></div>
+      </div>
+
+      <aside>
+        <h2 class="section-title">Agent activity</h2>
+        <div id="activity" class="activity">
+          <p class="hint">Nothing yet — send the agent a request.</p>
+        </div>
+      </aside>
+    </div>
+
+    <h2 class="section-title" id="threads-title" style="display:none;">Seller conversations</h2>
+    <div id="threads"></div>
+  </div>
+
+  <script src="/agent.js"></script>
+</body>
+</html>
