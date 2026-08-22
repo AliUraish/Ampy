@@ -106,7 +106,7 @@ export function DemoOne(): React.ReactElement {
         ]);
       } else if (agent === "seller") {
         const existing = sellerSessionRef.current;
-        const continueTalk = Boolean(existing && (extractOffer(query) || query.length < 80));
+        const continueTalk = Boolean(existing && (extractOffer(query) || /take|offer|counter|yes|ok|nope|would you/i.test(query)));
         if (continueTalk && existing) {
           const result = continueSellerNegotiation(existing, query);
           sellerSessionRef.current = result.session;
