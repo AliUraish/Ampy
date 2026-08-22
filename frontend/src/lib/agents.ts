@@ -259,10 +259,19 @@ export async function runDealFinderAgent(
   });
 }
 
+export interface SellerSession {
+  item: string;
+  listPrice: number;
+  floor: number;
+  turn: number;
+}
+
 export async function runSellerAgent(query: string, signal: AbortSignal): Promise<{
   message: string;
   valuation: ChatTurn["valuation"];
   deals: DealCard[];
+  negotiation: NegotiationLine[];
+  session: SellerSession;
 }> {
   const response = await fetch(ampyApi.seller.value, {
     method: "POST",
@@ -295,8 +304,20 @@ export async function runSellerAgent(query: string, signal: AbortSignal): Promis
   const rationale = typeof payload.rationale === "string" ? payload.rationale : undefined;
   const comparables = Array.isArray(payload.comparables) ? payload.comparables as Record<string, unknown>[] : [];
 
+  const session: SellerSession = { item: query, listPrice, floor, turn: 1 };
+  const offerInQuery = extractOffer(query);
+  const negotiation = offerInQuery
+    ? [
+        { role: "buyer" as const, text: query, price: offerInQuery },
+        (() => {
+          const reply = sellerTurn({ item: query, asking: listPrice, floor, offered: offerInQuery, round: 1 });
+          return { role: "seller" as const, text: reply.text, price: reply.price };
+        })(),
+      ]
+    : runOpeningNegotiation({ item: query, asking: listPrice, floor });
+
   return {
-    message: `List around $${listPrice.toFixed(0)} (floor $${floor.toFixed(0)}). Range $${low.toFixed(0)}–$${high.toFixed(0)}.`,
+    message: `List around $${listPrice.toFixed(0)} (floor $${floor.toFixed(0)}). Range $${low.toFixed(0)}–$${high.toFixed(0)}. I started negotiating with a serious buyer.`,
     valuation: { listPrice, floor, low, high, rationale },
     deals: comparables.map((comp, index) => ({
       id: String(comp.url || index),
@@ -306,6 +327,31 @@ export async function runSellerAgent(query: string, signal: AbortSignal): Promis
       location: typeof comp.notes === "string" ? comp.notes : undefined,
       why: "Live comparable used for this valuation.",
     })),
+    negotiation,
+    session,
+  };
+}
+
+export function continueSellerNegotiation(session: SellerSession, buyerMessage: string): {
+  message: string;
+  negotiation: NegotiationLine[];
+  session: SellerSession;
+} {
+  const offered = extractOffer(buyerMessage) ?? Math.round(session.floor * 0.9);
+  const reply = sellerTurn({
+    item: session.item,
+    asking: session.listPrice,
+    floor: session.floor,
+    offered,
+    round: session.turn + 1,
+  });
+  return {
+    message: reply.text,
+    negotiation: [
+      { role: "buyer", text: buyerMessage, price: offered },
+      { role: "seller", text: reply.text, price: reply.price },
+    ],
+    session: { ...session, turn: session.turn + 1, listPrice: reply.price },
   };
 }
 
