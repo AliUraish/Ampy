@@ -27,11 +27,22 @@ export function DemoOne(): React.ReactElement {
   const abortRef = React.useRef<AbortController | null>(null);
 
   React.useEffect(() => {
-    fetch("/api/status")
-      .then(async (res) => {
-        setStackOk(res.ok);
-      })
-      .catch(() => setStackOk(false));
+    let cancelled = false;
+    const check = () => {
+      fetch("/api/status")
+        .then(async (res) => {
+          if (!cancelled) setStackOk(res.ok);
+        })
+        .catch(() => {
+          if (!cancelled) setStackOk(false);
+        });
+    };
+    check();
+    const id = window.setInterval(check, 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
   }, []);
 
   const stop = React.useCallback(() => {
