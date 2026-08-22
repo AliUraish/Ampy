@@ -296,9 +296,10 @@ export async function runBuyerAgent(
   query: string,
   signal: AbortSignal,
   onLog: (line: string) => void,
-): Promise<{ message: string; logs: string[] }> {
+): Promise<{ message: string; logs: string[]; deals: DealCard[] }> {
   const logs: string[] = [];
   let recommendation = "";
+  let deals: DealCard[] = [];
 
   await readSsePost(
     ampyApi.buyer.agentRun,
@@ -314,14 +315,22 @@ export async function runBuyerAgent(
         onLog(`search: ${String(event.query || "")}`);
       } else if (type === "search_result") {
         onLog(`found ${String(event.count ?? "?")} listings`);
-      } else if (type === "listings") {
-        onLog(`shortlist ready`);
+      } else if (type === "listings" && Array.isArray(event.listings)) {
+        deals = (event.listings as Record<string, unknown>[]).map((listing, index) =>
+          toDealCard(listing, String(listing.id || index)),
+        );
+        onLog(`shortlist ready · ${deals.length} listings`);
       } else if (type === "open_listing") {
         onLog(`open: ${String(event.title || event.listingId || "")}`);
       } else if (type === "contacting" || type === "contacted" || type === "negotiating" || type === "negotiated") {
         onLog(`${type}: ${String(event.title || event.listingId || "")}`);
       } else if (type === "done" || type === "result") {
         recommendation = String(event.summary || event.recommendation || event.message || recommendation || "Buyer agent finished.");
+        if (Array.isArray(event.listings) && event.listings.length && deals.length === 0) {
+          deals = (event.listings as Record<string, unknown>[]).map((listing, index) =>
+            toDealCard(listing, String(listing.id || index)),
+          );
+        }
       } else if (type === "error") {
         throw new Error(String(event.error || "Buyer agent error"));
       } else if (type === "warning") {
@@ -335,7 +344,10 @@ export async function runBuyerAgent(
   );
 
   return {
-    message: recommendation || (logs.length ? "Buyer agent finished." : "Buyer agent returned no recommendation."),
+    message: recommendation || (deals.length
+      ? `Found ${deals.length} live listings.`
+      : logs.length ? "Buyer agent finished." : "Buyer agent returned no recommendation."),
     logs: logs.slice(-12),
+    deals,
   };
 }
