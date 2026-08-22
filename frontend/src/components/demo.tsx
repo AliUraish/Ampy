@@ -81,8 +81,8 @@ export function DemoOne(): React.ReactElement {
             products: result.products,
           },
         ]);
-      } else if (agent === "deals") {
-        const result = await runDealFinderAgent(query, controller.signal, (line) => {
+      } else if (agent === "deals" || agent === "reseller") {
+        const result = await runResellerAgent(query, controller.signal, (line) => {
           setLiveLogs((logs) => [...logs.slice(-20), line]);
         });
         setTurns((prev) => [
@@ -90,10 +90,10 @@ export function DemoOne(): React.ReactElement {
           {
             id: crypto.randomUUID(),
             role: "agent",
-            agent,
+            agent: "reseller",
             text: result.message,
             deals: result.deals,
-            logs: result.deals.map((d) => d.title),
+            events: result.events,
           },
         ]);
       } else if (agent === "seller") {
@@ -106,6 +106,7 @@ export function DemoOne(): React.ReactElement {
             agent,
             text: result.message,
             valuation: result.valuation,
+            deals: result.deals,
           },
         ]);
       } else {
@@ -149,13 +150,12 @@ export function DemoOne(): React.ReactElement {
           <p className="mb-3 font-mono text-xs uppercase tracking-[0.28em] text-white/45">Ampy</p>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">Find your next favorite thing.</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
-            One chat for product discovery, nationwide deal hunting, seller valuation, and the buyer agent.
+            One chat for selling what you have, flipping underpriced inventory, and buying on Craigslist.
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] uppercase tracking-[0.16em] text-white/40">
-            <span className="rounded-full border border-white/10 px-3 py-1">Default · Discover</span>
-            <span className="rounded-full border border-[#1EAEDB]/30 px-3 py-1 text-[#7dd3fc]">Deals · Finder</span>
             <span className="rounded-full border border-[#8B5CF6]/30 px-3 py-1 text-[#c4b5fd]">Seller · Value</span>
-            <span className="rounded-full border border-[#F97316]/30 px-3 py-1 text-[#fdba74]">Buyer · Agent</span>
+            <span className="rounded-full border border-[#1EAEDB]/30 px-3 py-1 text-[#7dd3fc]">Reseller · Flip</span>
+            <span className="rounded-full border border-[#F97316]/30 px-3 py-1 text-[#fdba74]">Buyer · Hunt</span>
           </div>
           {stackOk === false ? (
             <p className="mt-3 text-xs text-amber-200/90">Backends look offline — run `npm start` from the repo root.</p>
@@ -170,7 +170,7 @@ export function DemoOne(): React.ReactElement {
             onSend={handleSendMessage}
             onStop={stop}
             isLoading={isRunning}
-            placeholder="what products can i search for you"
+            placeholder="Pick Seller, Reseller, or Buyer — then say what you need"
           />
         </div>
 
