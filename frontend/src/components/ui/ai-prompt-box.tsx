@@ -20,6 +20,8 @@ interface PromptInputBoxProps {
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
+  /** Hide the Reseller / Seller / Buyer mode toggles (single-purpose chat). */
+  showModes?: boolean;
 }
 
 interface ModeButtonProps {
@@ -134,7 +136,7 @@ function TooltipButton({ label, children }: { label: string; children: React.Rea
 }
 
 export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>(
-  ({ onSend = () => undefined, onStop, isLoading = false, placeholder = "Type your message here...", className }, forwardedRef) => {
+  ({ onSend = () => undefined, onStop, isLoading = false, placeholder = "Type your message here...", className, showModes = true }, forwardedRef) => {
     const [input, setInput] = React.useState("");
     const [file, setFile] = React.useState<File | null>(null);
     const [filePreview, setFilePreview] = React.useState<string | null>(null);
@@ -314,11 +316,15 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   event.target.value = "";
                 }}
               />
-              <ModeButton active={mode === "search"} label="Reseller" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
-              <Divider />
-              <ModeButton active={mode === "think"} label="Seller" color="purple" icon={<BrainCog className="size-4" />} onClick={() => toggleMode("think")} />
-              <Divider />
-              <ModeButton active={mode === "canvas"} label="Buyer" color="orange" icon={<FolderCode className="size-4" />} onClick={() => toggleMode("canvas")} />
+              {showModes ? (
+                <>
+                  <ModeButton active={mode === "search"} label="Reseller" color="blue" icon={<Globe className="size-4" />} onClick={() => toggleMode("search")} />
+                  <Divider />
+                  <ModeButton active={mode === "think"} label="Seller" color="purple" icon={<BrainCog className="size-4" />} onClick={() => toggleMode("think")} />
+                  <Divider />
+                  <ModeButton active={mode === "canvas"} label="Buyer" color="orange" icon={<FolderCode className="size-4" />} onClick={() => toggleMode("canvas")} />
+                </>
+              ) : null}
             </div>
 
             <TooltipButton label={isLoading ? "Stop" : isRecording ? "Cancel recording" : hasContent ? "Send message" : "Voice message"}>

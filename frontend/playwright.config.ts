@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: false,
   reporter: "line",
   use: {
-    baseURL: "http://localhost:3002",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

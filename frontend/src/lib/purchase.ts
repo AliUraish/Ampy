@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/products";
 
-/** One bubble in the buyer-agent vs seller-agent purchase chat. */
+/** One bubble in a buyer-agent vs seller-agent chat. */
 export interface PurchaseLine {
   role: "buyer" | "seller";
   text: string;
@@ -13,7 +13,7 @@ export type PurchaseProduct = Pick<Product, "id" | "name" | "price" | "retailer"
 
 export interface PurchaseTurnRequest {
   product: PurchaseProduct;
-  /** Listed price the seller agent defends. */
+  /** Listed price the retailer's seller agent defends. */
   listPrice: number;
   /** Shopper's hard ceiling — enforced server-side, the buyer agent cannot exceed it. */
   budget: number;
@@ -29,6 +29,7 @@ export interface PurchaseTurnResponse {
   sources: { buyer: "mistral" | "local"; seller: "seller-agent" | "local" | "none" };
 }
 
+/** The record of one simulated purchase. */
 export interface PurchaseReceipt {
   orderId: string;
   productId: string;
@@ -60,6 +61,10 @@ export function formatUsd(amount: number): string {
     currency: "USD",
     maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
   }).format(amount);
+}
+
+export function roundPrice(value: number, reference: number): number {
+  return reference >= 50 ? Math.round(value) : Math.round(value * 100) / 100;
 }
 
 export async function runPurchaseTurn(body: PurchaseTurnRequest, signal: AbortSignal): Promise<PurchaseTurnResponse> {

@@ -1,5 +1,5 @@
-import { DemoOne } from "@/components/demo";
+import { AmpyApp } from "@/components/ampy-app";
 
 export default function Home(): React.ReactElement {
-  return <DemoOne />;
+  return <AmpyApp />;
 }

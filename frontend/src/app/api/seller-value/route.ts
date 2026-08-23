@@ -130,5 +130,5 @@ function searchFallbacks(item: string): string[] {
   if (withoutModels.length >= 2) queries.push(withoutModels.join(" "));
   if (words.length > 2) queries.push(words.slice(-2).join(" "));
   if (words.length) queries.push(words[words.length - 1]);
-  return [...new Set(queries.filter(Boolean))];
+  return Array.from(new Set(queries.filter(Boolean)));
 }

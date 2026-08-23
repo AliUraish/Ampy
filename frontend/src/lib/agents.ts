@@ -2,6 +2,7 @@ import { ampyApi } from "@/lib/ampy";
 import { mockScrapedCalendar, type EventCard } from "@/lib/calendar";
 import { extractOffer, runOpeningNegotiation, sellerTurn, type NegotiationLine } from "@/lib/negotiateLocal";
 import { isProductSearchResponse, type Product } from "@/lib/products";
+import type { PurchaseReceipt } from "@/lib/purchase";
 import type { PromptMode } from "@/components/ui/ai-prompt-box";
 
 export type { EventCard, NegotiationLine };
@@ -50,6 +51,8 @@ export interface ChatTurn {
   events?: EventCard[];
   negotiation?: NegotiationLine[];
   logs?: string[];
+  /** Simulated purchase completed from the discover grid. */
+  receipt?: PurchaseReceipt;
   valuation?: {
     listPrice?: number;
     floor?: number;

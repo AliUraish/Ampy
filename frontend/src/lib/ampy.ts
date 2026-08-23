@@ -20,7 +20,8 @@ export const ampyApi = {
   },
   /** Deal Finder — proxied to backend/deal-finder. */
   dealFinder: {
-    deals: "/api/deals",
+    /** Same backend stream as /api/deals, piped through a Next route so it is never gzip-buffered. */
+    deals: "/api/deal-stream",
     locations: "/api/deal-finder/craigslist-locations",
     health: "/api/deal-finder/health",
   },
