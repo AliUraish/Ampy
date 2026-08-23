@@ -27,8 +27,10 @@
 const API_URL = "https://api.mistral.ai/v1/chat/completions";
 
 const MODEL = () => process.env.MISTRAL_MODEL || "mistral-medium-latest";
-// Pixtral is Mistral's vision family — used only by lib/vision.js.
-const VISION_MODEL = () => process.env.MISTRAL_VISION_MODEL || "pixtral-large-latest";
+// Vision model used only by lib/vision.js. Mistral retired the pixtral-* ids;
+// mistral-medium-latest accepts image_url content (same model the deal-finder
+// appraises photos with).
+const VISION_MODEL = () => process.env.MISTRAL_VISION_MODEL || "mistral-medium-latest";
 const SEARCH_TOOL = () => process.env.MISTRAL_SEARCH_TOOL || "web_search";
 
 const MAX_RETRIES = 6;
