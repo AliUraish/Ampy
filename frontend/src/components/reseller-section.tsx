@@ -195,7 +195,7 @@ export function ResellerSection(): React.ReactElement {
   const stateRef = React.useRef(state);
   stateRef.current = state;
   const [category, setCategory] = React.useState("general");
-  const [query, setQuery] = React.useState("road bike");
+  const [query, setQuery] = React.useState("");
   const [maxPrice, setMaxPrice] = React.useState("400");
   const [showPasses, setShowPasses] = React.useState(false);
   // Quick scan = backend fast path (4 markets, comps-only scoring, seconds).
@@ -355,12 +355,8 @@ export function ResellerSection(): React.ReactElement {
     connect(params, false);
   }, [category, connect, deep, log, maxPrice, query]);
 
-  // Same as the original: quietly hydrate the last real scan on load.
-  React.useEffect(() => {
-    dispatch({ type: "loadingCache", loading: true });
-    connect(new URLSearchParams({ cached: "1", fast: "1" }), true);
-    return () => closeStream();
-  }, [connect, closeStream]);
+  // Start clean; the last real scan is one click away via "Last scan".
+  React.useEffect(() => closeStream, [closeStream]);
 
   React.useEffect(() => {
     if (!drawer) return undefined;
@@ -405,7 +401,7 @@ export function ResellerSection(): React.ReactElement {
         <label className="flex h-12 items-center gap-2 rounded-2xl bg-black/30 px-3 text-sm focus-within:ring-1 focus-within:ring-sky-400/60">
           <Search className="size-4 text-white/40" />
           <span className="sr-only">Search target</span>
-          <input ref={queryInputRef} value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="What should the agent find?" required className="w-full bg-transparent text-white outline-none placeholder:text-white/30" />
+          <input ref={queryInputRef} value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="What should the agent find? e.g. road bike, espresso machine" required className="w-full bg-transparent text-white outline-none placeholder:text-white/30" />
         </label>
         <label className="flex h-12 items-center gap-1 rounded-2xl bg-black/30 px-3 text-sm focus-within:ring-1 focus-within:ring-sky-400/60">
           <span className="text-white/40">$</span>
