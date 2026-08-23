@@ -67,8 +67,6 @@ export function AmpyApp(): React.ReactElement {
           </div>
           {stackOk === false ? (
             <p className="text-xs text-amber-200/90">Backends look offline — run `npm start` from the repo root. Agents fall back to local logic.</p>
-          ) : stackOk === true ? (
-            <p className="text-xs text-emerald-300/80">Seller · Buyer · Deal Finder connected</p>
           ) : null}
         </header>
 
