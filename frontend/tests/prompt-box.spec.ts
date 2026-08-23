@@ -67,7 +67,10 @@ test("reseller: renders the Deal Finder scan bar and starts a scan", async ({ pa
   await page.goto("/");
   await page.getByRole("tab", { name: "Reseller" }).click();
   await expect(page.getByRole("heading", { name: "Find the deal before everyone else." })).toBeVisible();
-  await expect(page.getByLabel("Search target")).toHaveValue("road bike");
+  await expect(page.getByLabel("Search target")).toHaveValue("");
+  await expect(page.getByText("Promising finds will land here.")).toBeVisible();
+  await expect(page.getByTestId("result-count")).toHaveText("0 deals");
+  await page.getByLabel("Search target").fill("road bike");
   await expect(page.getByLabel("Maximum price in dollars")).toHaveValue("400");
   await page.getByRole("button", { name: "Find deals" }).click();
   await expect(page.getByRole("button", { name: "Searching…" })).toBeDisabled();
