@@ -1,0 +1,9 @@
+{
+  "name": "dealfinder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mistral-powered Craigslist deal finder: scans U.S. markets, values listings, streams underpriced deals with reasoning.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "dev": "node --watch server.js", "test": "node --test" },
+  "dependencies": { "cheerio": "^1.0.0", "dotenv": "^16.4.5", "express": "^4.21.0" }
+}
